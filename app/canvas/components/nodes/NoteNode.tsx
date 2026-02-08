@@ -60,52 +60,52 @@ function NoteNode({ id, data, selected }: NodeProps) {
 
             <div
                 className={cn(
-                    "w-full h-full flex flex-col transition-all duration-300 rounded-xl overflow-hidden backdrop-blur-md shadow-2xl",
-                    "bg-[#1A1A1A]/95 border border-white/[0.08]",
+                    "w-full h-full flex flex-col transition-all duration-300 rounded-lg overflow-hidden shadow-2xl",
+                    "bg-[#1A1A1A] border border-white/[0.08]",
                     selected
-                        ? "ring-2 ring-blue-500/40 border-blue-500/40 shadow-blue-500/10"
-                        : "hover:border-white/20 hover:shadow-white/5"
+                        ? "ring-1 ring-blue-500/50 border-blue-500/50"
+                        : "hover:border-white/20"
                 )}
             >
-                {/* Header - Premium Gradient */}
-                <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-white/[0.04] to-transparent border-b border-white/[0.05] shrink-0 h-10 drag-handle">
-                    <div className="flex items-center justify-center w-5 h-5 rounded-md bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                {/* Header - Slimmer & Simpler */}
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-white/[0.02] border-b border-white/[0.05] shrink-0 h-9 drag-handle">
+                    <div className="flex items-center justify-center w-4 h-4 rounded text-blue-400">
                         <FileText className="w-3.5 h-3.5" />
                     </div>
-                    <span className="text-[13px] font-semibold text-zinc-200 truncate flex-1 leading-none pt-0.5 tracking-tight">
+                    <span className="text-[12px] font-medium text-zinc-300 truncate flex-1 leading-none pt-0.5">
                         {nodeData.title || 'Untitled Note'}
                     </span>
-                    <div className="flex items-center opacity-0 group-hover:opacity-100 transition-all duration-200">
+                    <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
                             onClick={handleOpen}
-                            className="p-1.5 hover:bg-white/10 rounded-md text-zinc-400 hover:text-white transition-colors"
+                            className="p-1 hover:bg-white/10 rounded text-zinc-500 hover:text-white transition-colors"
                             title="Open Full Document"
                         >
-                            <Maximize2 className="w-3.5 h-3.5" />
+                            <Maximize2 className="w-3 h-3" />
                         </button>
                     </div>
                 </div>
 
                 {/* Editor Content Area */}
-                <div className="flex-1 overflow-hidden relative nodrag nopan nowheel bg-black/20 cursor-text">
+                <div className="flex-1 overflow-hidden relative nodrag nopan nowheel bg-black/10 cursor-text">
                     <style jsx global>{`
                         .custom-scrollbar {
                             scrollbar-width: thin;
                             scrollbar-color: rgba(255,255,255,0.1) transparent;
                         }
                         .custom-scrollbar::-webkit-scrollbar {
-                            width: 5px;
-                            height: 5px;
+                            width: 4px;
+                            height: 4px;
                         }
                         .custom-scrollbar::-webkit-scrollbar-track {
                             background: transparent;
                         }
                         .custom-scrollbar::-webkit-scrollbar-thumb {
-                            background: rgba(255,255,255,0.1);
+                            background: rgba(255,255,255,0.15);
                             border-radius: 10px;
                         }
                         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-                            background: rgba(255,255,255,0.2);
+                            background: rgba(255,255,255,0.25);
                         }
 
                         /* BlockNote Overrides */
@@ -114,30 +114,25 @@ function NoteNode({ id, data, selected }: NodeProps) {
                             background: transparent !important;
                         }
                         .bn-block-content {
-                            padding-top: 2px !important; 
-                            padding-bottom: 2px !important;
+                            padding-top: 1px !important; 
+                            padding-bottom: 1px !important;
                             background: transparent !important;
                         }
                         
-                        /* Scale down and refine headings */
                         .bn-editor h1 {
-                            font-size: 1.25rem !important;
-                            font-weight: 800 !important;
-                            letter-spacing: -0.025em !important;
-                            color: #fff !important;
-                            margin-top: 1rem !important;
-                            margin-bottom: 0.5rem !important;
+                            font-size: 1.15rem !important;
+                            font-weight: 700 !important;
+                            margin-top: 0.75rem !important;
+                            margin-bottom: 0.35rem !important;
                         }
                         .bn-editor h2 {
-                            font-size: 1.1rem !important;
-                            font-weight: 700 !important;
-                            color: #f4f4f5 !important;
-                            margin-top: 0.75rem !important;
+                            font-size: 1.05rem !important;
+                            font-weight: 600 !important;
                         }
                         .bn-editor p {
-                             font-size: 0.925rem !important;
+                             font-size: 0.875rem !important;
                              color: #a1a1aa !important;
-                             line-height: 1.6 !important;
+                             line-height: 1.5 !important;
                         }
 
                         /* Hide placeholders */
@@ -154,7 +149,7 @@ function NoteNode({ id, data, selected }: NodeProps) {
                             display: none !important;
                         }
                     `}</style>
-                    <div className="h-full w-full overflow-y-auto custom-scrollbar px-5 py-4">
+                    <div className="h-full w-full overflow-y-auto custom-scrollbar px-4 py-3">
                         <Editor
                             initialContent={initialEditorContent}
                             onChange={handleContentChange}
