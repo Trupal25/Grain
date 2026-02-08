@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
 import { BlockNoteEditor, Block, PartialBlock } from '@/components/editor';
@@ -15,8 +15,19 @@ import {
     Star,
     Trash2,
     Share2,
+    Home,
+    ChevronRight,
     PanelLeft,
 } from 'lucide-react';
+import {
+    Breadcrumb,
+    BreadcrumbItem,
+    BreadcrumbLink,
+    BreadcrumbList,
+    BreadcrumbPage,
+    BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb';
+import React from 'react';
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
@@ -201,6 +212,28 @@ export default function DocumentPage() {
         }
     };
 
+    // Build Breadcrumbs from allFolders and current document
+    const breadcrumbs = useMemo(() => {
+        const crumbs: { id: string | null; name: string }[] = [{ id: null, name: 'Grain' }];
+
+        if (!doc || allFolders.length === 0) return crumbs;
+
+        const path: { id: string; name: string }[] = [];
+        let currentFolderId = (doc as any).folderId;
+
+        while (currentFolderId) {
+            const folder = allFolders.find(f => f.id === currentFolderId);
+            if (folder) {
+                path.unshift({ id: folder.id, name: folder.name });
+                currentFolderId = folder.parentFolderId;
+            } else {
+                break;
+            }
+        }
+
+        return [...crumbs, ...path];
+    }, [doc, allFolders]);
+
     // Toggle star
     const toggleStar = async () => {
         if (!doc) return;
@@ -296,19 +329,38 @@ export default function DocumentPage() {
                                 <PanelLeft className="w-4 h-4" />
                             </button>
                             <div className="h-4 w-px bg-zinc-800 mx-1" />
-                            <button
-                                onClick={() => router.push('/dashboard')}
-                                className="p-2 hover:bg-zinc-800 rounded-lg transition-colors"
-                            >
-                                <ArrowLeft className="w-5 h-5" />
-                            </button>
 
-                            <input
-                                type="text"
-                                value={docName}
-                                onChange={(e) => updateName(e.target.value)}
-                                className="bg-transparent text-lg font-semibold focus:outline-none border-b border-transparent hover:border-zinc-600 focus:border-purple-500 px-1 py-1 transition-colors max-w-[300px]"
-                            />
+                            {/* Breadcrumbs + Doc Name */}
+                            <div className="flex items-center">
+                                <Breadcrumb>
+                                    <BreadcrumbList className="gap-1 sm:gap-1">
+                                        {breadcrumbs.map((crumb: { id: string | null; name: string }, idx: number) => (
+                                            <React.Fragment key={crumb.id || 'root'}>
+                                                <BreadcrumbItem className="hidden md:block">
+                                                    <BreadcrumbLink
+                                                        onClick={() => router.push(crumb.id ? `/dashboard?folderId=${crumb.id}` : '/dashboard')}
+                                                        className="text-zinc-500 hover:text-white transition-colors cursor-pointer text-sm font-medium"
+                                                    >
+                                                        {idx === 0 && <span className="mr-1 text-zinc-400">Grain</span>}
+                                                        {idx > 0 && crumb.name}
+                                                    </BreadcrumbLink>
+                                                </BreadcrumbItem>
+                                                <BreadcrumbSeparator className="hidden md:block text-zinc-700">
+                                                    <ChevronRight className="w-3.5 h-3.5" />
+                                                </BreadcrumbSeparator>
+                                            </React.Fragment>
+                                        ))}
+                                        <BreadcrumbItem>
+                                            <input
+                                                type="text"
+                                                value={docName}
+                                                onChange={(e) => updateName(e.target.value)}
+                                                className="bg-transparent text-sm font-semibold text-white focus:outline-none border-b border-transparent hover:border-zinc-700 px-1 py-0.5 transition-all max-w-[200px]"
+                                            />
+                                        </BreadcrumbItem>
+                                    </BreadcrumbList>
+                                </Breadcrumb>
+                            </div>
 
                             {/* Save Status */}
                             <div className="flex items-center gap-1 text-sm">
