@@ -126,13 +126,24 @@ export async function generateImage(prompt: string, aspectRatio = '1:1') {
 }
 
 // Video generation using Veo
-export async function generateVideo(prompt: string, durationSeconds = 4) {
+export async function generateVideo(prompt: string, durationSeconds = 4, images: string[] = []) {
     if (!ai) throw new Error('AI client not initialized - set GEMINI_API_KEY');
+
+    // Prepare image reference if available
+    let inputImage: any = undefined;
+    if (images.length > 0) {
+        // Use the first image as a reference for Veo
+        const imgPart = await urlToBase64(images[0]);
+        if (imgPart) {
+            inputImage = imgPart;
+        }
+    }
 
     // Start video generation
     let operation = await ai.models.generateVideos({
         model: 'veo-2.0-generate-001',
         prompt,
+        ...(inputImage && { image: inputImage }),
         config: {
             durationSeconds,
             aspectRatio: '16:9',

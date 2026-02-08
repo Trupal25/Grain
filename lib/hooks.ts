@@ -22,6 +22,7 @@ export function useNodeInputs(nodeId: string) {
         const texts: string[] = [];
         const images: string[] = [];
         const videos: string[] = [];
+        const youtube: string[] = [];
 
         sourceNodes.forEach((n: Node) => {
             const data = n.data as any;
@@ -46,12 +47,18 @@ export function useNodeInputs(nodeId: string) {
             if (n.type === 'video' && data.videoUrl) {
                 videos.push(data.videoUrl);
             }
+
+            // Extract youtube
+            if (n.type === 'youtube' && data.videoUrl) {
+                youtube.push(data.videoUrl);
+            }
         });
 
         return {
             texts,
             images,
             videos,
+            youtube,
             combinedText: texts.join('\n\n')
         };
     }, [nodeId, getNodes, getEdges]);
@@ -77,11 +84,11 @@ export async function generateImageAPI(prompt: string, aspectRatio: string) {
     return res.json() as Promise<{ imageUrl: string }>;
 }
 
-export async function generateVideoAPI(prompt: string, duration: string) {
+export async function generateVideoAPI(prompt: string, duration: string, images: string[] = []) {
     const res = await fetch('/api/generate/video', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, duration }),
+        body: JSON.stringify({ prompt, duration, images }),
     });
 
     if (!res.ok) {

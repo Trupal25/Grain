@@ -1,7 +1,7 @@
 'use client';
 
 import '@xyflow/react/dist/style.css';
-import { useCallback, useEffect, useState, Suspense } from 'react';
+import { useCallback, useEffect, useState, Suspense, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
@@ -27,11 +27,13 @@ import VideoNode from './components/nodes/VideoNode';
 import TextNode from './components/nodes/TextNode';
 import NoteNode from './components/nodes/NoteNode';
 import ChatNode from './components/nodes/ChatNode';
+import YoutubeNode from './components/nodes/YoutubeNode';
 import ToolsSidebar from './components/Sidebar';
 import { Sidebar as AppSidebar } from '@/components/Sidebar';
 import { WorkspaceSidebar } from '@/components/WorkspaceSidebar';
-import { ImageIcon, Video, AlignLeft, Loader2, Cloud, CloudOff, Check, PanelLeft, MessageCircle } from 'lucide-react';
-import type { ImageNodeData, VideoNodeData, TextNodeData } from './types';
+import { ImageIcon, Video, AlignLeft, Loader2, Cloud, CloudOff, Check, PanelLeft, MessageCircle, Youtube } from 'lucide-react';
+import { toast } from 'sonner';
+import type { ImageNodeData, VideoNodeData, TextNodeData, YoutubeNodeData } from './types';
 import { useAutoSave, loadProject, createProject } from '@/lib/project';
 import { Folder as FolderType, Document as DocumentType, Project as ProjectType } from '@/lib/db/schema';
 
@@ -40,7 +42,8 @@ const nodeTypes: NodeTypes = {
   video: VideoNode,
   text: TextNode,
   note: NoteNode,
-  chat: ChatNode
+  chat: ChatNode,
+  youtube: YoutubeNode
 };
 
 let nodeId = 0;
@@ -52,6 +55,7 @@ const defaultData = {
   text: { label: 'Prompt', model: 'gemini-2.0-flash-lite', text: '' } as TextNodeData,
   note: { label: 'Note', noteId: '', title: '', content: '' } as any,
   chat: { label: 'Assistant', model: 'gemini-2.0-flash-lite', messages: [] } as any,
+  youtube: { label: 'YouTube', videoUrl: '' } as YoutubeNodeData,
 };
 
 interface MenuState { x: number; y: number; sourceId: string }
@@ -61,12 +65,14 @@ type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 function GrainCanvas() {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
-  const { screenToFlowPosition, setViewport } = useReactFlow();
+  const { screenToFlowPosition, setViewport, deleteElements } = useReactFlow();
   const [mounted, setMounted] = useState(false);
   const [menu, setMenu] = useState<MenuState | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const connectingRef = useRef(false);
   const [projectName, setProjectName] = useState('Untitled Project');
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
+  const [activeTool, setActiveTool] = useState<'pointer' | 'hand'>('pointer');
 
   const { user, isLoaded: isUserLoaded } = useUser();
   const searchParams = useSearchParams();
@@ -180,6 +186,93 @@ function GrainCanvas() {
     initProject();
   }, [isUserLoaded, user, projectId, router, setNodes, setEdges, setViewport]);
 
+  // Handle keyboard shortcuts for tools
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if user is typing in an input/textarea
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+      if (e.key.toLowerCase() === 'v' || e.key === 'Escape') setActiveTool('pointer');
+      if (e.key.toLowerCase() === 'h' || e.key === ' ') setActiveTool('hand');
+
+      // Delete selected elements
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        const selectedNodes = nodes.filter(n => n.selected);
+        const selectedEdges = edges.filter(e => e.selected);
+        if (selectedNodes.length > 0 || selectedEdges.length > 0) {
+          deleteElements({ nodes: selectedNodes, edges: selectedEdges });
+          toast.success('Selected elements removed');
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [nodes, edges, deleteElements]);
+
+  // Handle URL Paste
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      const text = e.clipboardData?.getData('text/plain');
+      if (!text) return;
+
+      // Don't trigger if user is typing in an input/textarea (except for our specific nodrag/nowheel areas if needed, but usually we don't want to spawn nodes while typing in another node's input)
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+      const isYoutube = text.includes('youtube.com') || text.includes('youtu.be');
+      const isImage = /\.(jpg|jpeg|png|webp|gif|svg)$/i.test(text.split('?')[0]);
+      const isVideo = /\.(mp4|webm|ogg)$/i.test(text.split('?')[0]);
+
+      if (isYoutube) {
+        const x = window.innerWidth / 2;
+        const y = window.innerHeight / 2;
+        const pos = screenToFlowPosition({ x, y });
+        const id = getNodeId('youtube');
+        setNodes(nds => [...nds, {
+          id,
+          type: 'youtube',
+          position: { x: pos.x - 200, y: pos.y - 120 },
+          data: { ...defaultData.youtube, videoUrl: text }
+        }]);
+        toast.success('YouTube video embedded');
+        return;
+      }
+
+      if (isImage) {
+        const x = window.innerWidth / 2;
+        const y = window.innerHeight / 2;
+        const pos = screenToFlowPosition({ x, y });
+        const id = getNodeId('image');
+        setNodes(nds => [...nds, {
+          id,
+          type: 'image',
+          position: { x: pos.x - 200, y: pos.y - 200 },
+          data: { ...defaultData.image, imageUrl: text }
+        }]);
+        toast.success('Image embedded');
+        return;
+      }
+
+      if (isVideo) {
+        const x = window.innerWidth / 2;
+        const y = window.innerHeight / 2;
+        const pos = screenToFlowPosition({ x, y });
+        const id = getNodeId('video');
+        setNodes(nds => [...nds, {
+          id,
+          type: 'video',
+          position: { x: pos.x - 200, y: pos.y - 120 },
+          data: { ...defaultData.video, videoUrl: text }
+        }]);
+        toast.success('Video embedded');
+        return;
+      }
+    };
+
+    window.addEventListener('paste', handlePaste);
+    return () => window.removeEventListener('paste', handlePaste);
+  }, [screenToFlowPosition, setNodes]);
+
   // Auto-save on node/edge changes
   useEffect(() => {
     if (!isLoading && projectId && nodes.length > 0) {
@@ -242,18 +335,50 @@ function GrainCanvas() {
     }
   }, [nodes, setNodes]);
 
-  const isValidConnection = useCallback((conn: Edge | Connection) => conn.source !== conn.target, []);
-  const onConnect = useCallback((params: Connection) => setEdges(eds => addEdge(params, eds)), [setEdges]);
+  const onConnect = useCallback((params: Connection) => {
+    connectingRef.current = true;
+    setEdges(eds => addEdge(params, eds));
+  }, [setEdges]);
 
-  const onConnectEnd: OnConnectEnd = useCallback((event, state) => {
-    const target = event.target as HTMLElement;
-    if (target.classList.contains('react-flow__pane') && state.fromNode) {
-      const { clientX, clientY } = 'changedTouches' in event ? event.changedTouches[0] : event;
-      setTimeout(() => setMenu({ x: clientX, y: clientY, sourceId: state.fromNode!.id }), 0);
+  const isValidConnection = useCallback((conn: Edge | Connection) => {
+    if (conn.source === conn.target) return false;
+
+    const sourceNode = nodes.find(n => n.id === conn.source);
+    const targetNode = nodes.find(n => n.id === conn.target);
+
+    if (!sourceNode || !targetNode) return false;
+
+    // Rules:
+    // Text, Note, Chat can act as inputs to Image, Video, or another Chat
+    if (sourceNode.type === 'text' || sourceNode.type === 'note' || sourceNode.type === 'chat') {
+      return ['image', 'video', 'chat'].includes(targetNode.type as string);
     }
+
+    // Media nodes (Image, Video, YouTube) can only connect to Chat for context
+    if (sourceNode.type === 'image' || sourceNode.type === 'video' || sourceNode.type === 'youtube') {
+      if (sourceNode.type === 'image' && targetNode.type === 'video') return true;
+      return targetNode.type === 'chat';
+    }
+
+    return false;
+  }, [nodes]);
+
+  const onEdgeContextMenu = useCallback((event: React.MouseEvent, edge: Edge) => {
+    event.preventDefault();
+    setEdges((eds) => eds.filter((e) => e.id !== edge.id));
+    toast.success('Connection removed');
+  }, [setEdges]);
+  const onConnectEnd: OnConnectEnd = useCallback((event, state) => {
+    if (connectingRef.current) {
+      connectingRef.current = false;
+      return;
+    }
+
+    const { clientX, clientY } = 'changedTouches' in event ? event.changedTouches[0] : event;
+    setTimeout(() => setMenu({ x: clientX, y: clientY, sourceId: state.fromNode!.id }), 0);
   }, []);
 
-  const createNode = useCallback((type: 'image' | 'video' | 'text' | 'chat') => {
+  const createNode = useCallback((type: 'image' | 'video' | 'text' | 'chat' | 'youtube') => {
     if (!menu) return;
     const id = getNodeId(type);
     const pos = screenToFlowPosition({ x: menu.x, y: menu.y });
@@ -262,10 +387,20 @@ function GrainCanvas() {
     setMenu(null);
   }, [menu, screenToFlowPosition, setNodes, setEdges]);
 
-  const addNode = useCallback((type: 'image' | 'video' | 'text' | 'chat') => {
+  const addNode = useCallback((type: 'image' | 'video' | 'text' | 'chat' | 'youtube') => {
     const id = getNodeId(type);
-    setNodes(nds => [...nds, { id, type, position: { x: 300 + nds.length * 50, y: 200 + nds.length * 40 }, data: defaultData[type] }]);
-  }, [setNodes]);
+    // Spawn in the center of the viewport
+    const x = window.innerWidth / 2;
+    const y = window.innerHeight / 2;
+    const pos = screenToFlowPosition({ x, y });
+
+    setNodes(nds => [...nds, {
+      id,
+      type,
+      position: { x: pos.x - 200, y: pos.y - 200 },
+      data: defaultData[type]
+    }]);
+  }, [setNodes, screenToFlowPosition]);
 
   const onDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault();
@@ -342,6 +477,7 @@ function GrainCanvas() {
             onNavigateTrash={() => router.push('/dashboard?view=trash')}
             expandedFolders={expandedFolders}
             toggleFolderExpand={toggleFolderExpand}
+            onRefresh={fetchTree}
           />
         </div>
         <div className="flex-1 relative h-full">
@@ -399,15 +535,25 @@ function GrainCanvas() {
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
             onConnectEnd={onConnectEnd}
+            onEdgeContextMenu={onEdgeContextMenu}
             isValidConnection={isValidConnection}
             onPaneClick={() => setMenu(null)}
             fitView
+            style={{
+              cursor: activeTool === 'hand' ? 'grab' : 'default',
+              backgroundColor: '#050505'
+            }}
             minZoom={0.3}
             maxZoom={2}
             defaultViewport={{ x: 0, y: 0, zoom: 0.85 }}
             proOptions={{ hideAttribution: true }}
-            selectionMode={SelectionMode.Partial}
+            panOnDrag={activeTool === 'hand'}
             panOnScroll
+            selectionOnDrag={activeTool === 'pointer'}
+            selectionMode={SelectionMode.Partial}
+            nodesDraggable={activeTool === 'pointer'}
+            nodesConnectable={activeTool === 'pointer'}
+            elementsSelectable={activeTool === 'pointer'}
             onDragOver={onDragOver}
             onDrop={onDrop}
           >
@@ -421,7 +567,7 @@ function GrainCanvas() {
               className="p-2 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl min-w-[180px]"
             >
               <p className="text-[10px] text-zinc-500 uppercase font-semibold tracking-wider px-2 py-1 mb-1">Add Node</p>
-              {(['text', 'image', 'video', 'chat'] as const).map(type => (
+              {(['text', 'image', 'video', 'chat', 'youtube'] as const).map(type => (
                 <button
                   key={type}
                   onClick={() => createNode(type)}
@@ -431,7 +577,8 @@ function GrainCanvas() {
                   {type === 'image' && <ImageIcon className="w-4 h-4 text-purple-400" />}
                   {type === 'video' && <Video className="w-4 h-4 text-blue-400" />}
                   {type === 'chat' && <MessageCircle className="w-4 h-4 text-orange-400" />}
-                  {type === 'text' ? 'Text Prompt' : type === 'image' ? 'Image Gen' : type === 'video' ? 'Video Scene' : 'AI Chat'}
+                  {type === 'youtube' && <Youtube className="w-4 h-4 text-red-500" />}
+                  {type === 'text' ? 'Text Prompt' : type === 'image' ? 'Image Gen' : type === 'video' ? 'Video Scene' : type === 'chat' ? 'AI Chat' : 'YouTube Embed'}
                 </button>
               ))}
             </div>,
@@ -446,7 +593,18 @@ function GrainCanvas() {
           )}
         </div>
       </div>
-      <ToolsSidebar onAddNode={addNode} />
+      <ToolsSidebar
+        onAddNode={addNode}
+        activeTool={activeTool}
+        onToolChange={setActiveTool}
+        onDeleteSelected={() => {
+          const selectedNodes = nodes.filter(n => n.selected);
+          const selectedEdges = edges.filter(e => e.selected);
+          deleteElements({ nodes: selectedNodes, edges: selectedEdges });
+          toast.success('Selected elements removed');
+        }}
+        hasSelection={nodes.some(n => n.selected) || edges.some(e => e.selected)}
+      />
     </div>
   );
 }

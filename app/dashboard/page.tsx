@@ -606,6 +606,7 @@ export default function DashboardPage() {
                 toggleFolderExpand={toggleFolderExpand}
                 isTrashView={isTrashView}
                 isStarredView={isStarredView}
+                onRefresh={() => { fetchFolderContents(currentFolderId); fetchTree(); }}
             />
 
             {/* Main Content */}

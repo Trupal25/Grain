@@ -106,9 +106,13 @@ function ChatNode({ id, data, selected }: NodeProps) {
                     attachments: [
                         ...(attachedFile ? [attachedFile.url] : []),
                         ...inputs.images,
-                        ...inputs.videos
+                        ...inputs.videos,
+                        ...inputs.youtube
                     ],
-                    context: inputs.combinedText
+                    context: [
+                        inputs.combinedText,
+                        inputs.youtube.length > 0 ? `Attached YouTube Videos for context: ${inputs.youtube.join(', ')}` : ''
+                    ].filter(Boolean).join('\n\n')
                 }),
             });
 
@@ -166,6 +170,39 @@ function ChatNode({ id, data, selected }: NodeProps) {
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
         >
+            <style jsx global>{`
+                .chat-scrollbar {
+                    scrollbar-width: thin;
+                    scrollbar-color: rgba(255,255,255,0.05) transparent;
+                }
+                .chat-scrollbar::-webkit-scrollbar {
+                    width: 4px;
+                    height: 4px;
+                }
+                .chat-scrollbar::-webkit-scrollbar-track {
+                    background: transparent;
+                }
+                .chat-scrollbar::-webkit-scrollbar-thumb {
+                    background: rgba(255,255,255,0.1);
+                    border-radius: 10px;
+                }
+                .chat-scrollbar::-webkit-scrollbar-thumb:hover {
+                    background: rgba(255,255,255,0.2);
+                }
+                
+                /* Selection fix for code blocks */
+                .prose pre {
+                    background-color: rgba(24, 24, 27, 0.5) !important;
+                    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+                    border-radius: 12px !important;
+                    padding: 1rem !important;
+                }
+                .prose code {
+                    color: #e4e4e7 !important;
+                    background: transparent !important;
+                    padding: 0 !important;
+                }
+            `}</style>
             <NodeResizer
                 minWidth={MIN_WIDTH}
                 minHeight={MIN_HEIGHT}
@@ -206,11 +243,15 @@ function ChatNode({ id, data, selected }: NodeProps) {
                 "w-full h-full flex flex-col bg-[#0A0A0A] border transition-all duration-300 rounded-3xl overflow-hidden",
                 selected ? "border-zinc-700 ring-4 ring-white/5" : "border-white/5 shadow-2xl"
             )}>
+                {/* Grab Handle Header */}
+                <div className="h-4 w-full flex items-center justify-center bg-black/40 border-b border-white/5 cursor-grab active:cursor-grabbing group/handle">
+                    <div className="w-10 h-1 rounded-full bg-zinc-800 group-hover/handle:bg-zinc-700 transition-colors" />
+                </div>
 
                 {/* Chat Feed */}
                 <div
                     ref={scrollContainerRef}
-                    className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar bg-[radial-gradient(circle_at_50%_0%,rgba(24,24,27,0.5),transparent)] nowheel nodrag"
+                    className="flex-1 overflow-y-auto p-6 space-y-8 chat-scrollbar bg-[radial-gradient(circle_at_50%_0%,rgba(24,24,27,0.5),transparent)] nowheel nodrag"
                 >
                     <AnimatePresence initial={false}>
                         {messages.length === 0 && (
@@ -267,11 +308,11 @@ function ChatNode({ id, data, selected }: NodeProps) {
                 </div>
 
                 {/* Input Section */}
-                <div className="p-4 bg-black/50 border-t border-white/5 backdrop-blur-sm">
+                <div className="p-4 bg-black/50 border-t border-white/5 backdrop-blur-sm nowheel nodrag">
                     {/* Connection Inputs Preview */}
                     <AnimatePresence>
                         {getInputs().images.length > 0 && (
-                            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
+                            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex gap-2 overflow-x-auto pb-2 chat-scrollbar">
                                 {getInputs().images.map((img, idx) => (
                                     <div key={idx} className="relative group shrink-0 w-16 h-16 rounded-lg overflow-hidden border border-white/10 ring-2 ring-blue-500/20 shadow-lg">
                                         <img src={img} className="w-full h-full object-cover" />

@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const { prompt, duration = '4s' } = await request.json();
+        const { prompt, duration = '4s', images = [] } = await request.json();
 
         if (!prompt) {
             return NextResponse.json({ error: 'Prompt is required' }, { status: 400 });
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
         // Parse duration string to number
         const durationSeconds = parseInt(duration.replace('s', ''), 10) || 4;
 
-        const videoUrl = await generateVideo(prompt, durationSeconds);
+        const videoUrl = await generateVideo(prompt, durationSeconds, images);
 
         // Deduct credits after successful generation
         const remainingCredits = await decrementCredits(userId, 'video');

@@ -69,7 +69,7 @@ function VideoNode({ id, data, selected }: NodeProps) {
         updateNodeData(id, { isGenerating: true });
 
         try {
-            const { videoUrl } = await generateVideoAPI(prompt, nodeData.duration);
+            const { videoUrl } = await generateVideoAPI(prompt, nodeData.duration, inputs.images);
             updateNodeData(id, { videoUrl, isGenerating: false, workflowStatus: 'completed' });
             toast.success('Video generated');
         } catch (err) {
@@ -157,6 +157,9 @@ function VideoNode({ id, data, selected }: NodeProps) {
                 lineClassName="!border-zinc-500"
                 handleClassName="!w-2 !h-2 !bg-zinc-400 !border-zinc-600"
             />
+
+            {/* Grab Handle for Dragging */}
+            <div className="absolute top-0 left-0 right-0 h-10 cursor-grab active:cursor-grabbing z-30 rounded-t-2xl" />
 
             {/* Top Label */}
             <div className="absolute -top-7 left-1 flex items-center gap-2 px-1 py-1 z-20">

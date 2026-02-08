@@ -116,3 +116,10 @@ export interface ChatNodeData extends BaseNodeData {
     isProcessing?: boolean;
     model: TextModel;
 }
+
+/* Youtube Node */
+export interface YoutubeNodeData extends BaseNodeData {
+    videoUrl?: string;
+    width?: number;
+    height?: number;
+}
