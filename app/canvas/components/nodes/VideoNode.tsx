@@ -1,9 +1,10 @@
 'use client';
 
-import { memo, useState, useRef, useEffect } from 'react';
+import { memo, useState, useRef, useEffect, useCallback } from 'react';
 import { Handle, Position, NodeProps, NodeToolbar, useReactFlow } from '@xyflow/react';
 import { VideoNodeData, VIDEO_MODELS, DURATIONS } from '../../types';
 import { useConnectedPrompt, generateVideoAPI } from '@/lib/hooks';
+import { toast } from 'sonner';
 import {
     Select,
     SelectContent,
@@ -12,7 +13,14 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Video, Play, Pause, Clapperboard, Wand2, Maximize2, Download, RefreshCw, Trash2, AlertCircle } from 'lucide-react';
+import { Video, Play, Pause, Clapperboard, Wand2, Download, RefreshCw, Trash2, AlertCircle, Upload } from 'lucide-react';
+
+const MIN_WIDTH = 160;
+const MAX_WIDTH = 480;
+const MIN_HEIGHT = 90;
+const MAX_HEIGHT = 270;
+const DEFAULT_WIDTH = 240;
+const DEFAULT_HEIGHT = 135;
 
 function VideoNode({ id, data, selected }: NodeProps) {
     const nodeData = data as unknown as VideoNodeData;
@@ -21,10 +29,19 @@ function VideoNode({ id, data, selected }: NodeProps) {
 
     const [isPlaying, setIsPlaying] = useState(false);
     const videoRef = useRef<HTMLVideoElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
     const [isHovered, setIsHovered] = useState(false);
     const [label, setLabel] = useState(nodeData.label || 'Video');
     const [error, setError] = useState<string | null>(null);
+    const [isUploading, setIsUploading] = useState(false);
+    const [size, setSize] = useState<{ width: number; height: number }>({
+        width: (nodeData.width as number) || DEFAULT_WIDTH,
+        height: (nodeData.height as number) || DEFAULT_HEIGHT,
+    });
+    const [isResizing, setIsResizing] = useState(false);
+
     const hoverTimer = useRef<NodeJS.Timeout | undefined>(undefined);
+    const resizeRef = useRef({ startX: 0, startY: 0, startWidth: 0, startHeight: 0 });
 
     const handleMouseEnter = () => {
         if (hoverTimer.current) clearTimeout(hoverTimer.current);
@@ -38,6 +55,12 @@ function VideoNode({ id, data, selected }: NodeProps) {
         const timer = setTimeout(() => updateNodeData(id, { label }), 500);
         return () => clearTimeout(timer);
     }, [label, id, updateNodeData]);
+
+    // Save size to node data
+    useEffect(() => {
+        const timer = setTimeout(() => updateNodeData(id, { width: size.width, height: size.height }), 100);
+        return () => clearTimeout(timer);
+    }, [size, id, updateNodeData]);
 
     const togglePlay = () => {
         if (videoRef.current) {
@@ -60,14 +83,104 @@ function VideoNode({ id, data, selected }: NodeProps) {
         try {
             const { videoUrl } = await generateVideoAPI(prompt, nodeData.duration);
             updateNodeData(id, { videoUrl, isGenerating: false });
+            toast.success('Video generated');
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Generation failed');
             updateNodeData(id, { isGenerating: false });
+            toast.error('Failed to generate video');
         }
     };
 
+    const handleDownload = () => {
+        if (!nodeData.videoUrl) return;
+        const link = document.createElement('a');
+        link.href = nodeData.videoUrl;
+        link.download = `${label || 'video'}.mp4`;
+        link.click();
+    };
+
+    // Upload functionality
+    const handleUploadClick = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (!file.type.startsWith('video/')) {
+            toast.error('Please select a video file');
+            return;
+        }
+
+        setIsUploading(true);
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const res = await fetch('/api/upload', {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (res.ok) {
+                const { url } = await res.json();
+                updateNodeData(id, { videoUrl: url });
+                toast.success('Video uploaded');
+            } else {
+                toast.error('Failed to upload video');
+            }
+        } catch (error) {
+            console.error('Upload error:', error);
+            toast.error('Failed to upload video');
+        } finally {
+            setIsUploading(false);
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
+        }
+    };
+
+    // Resize functionality - maintains 16:9 aspect ratio
+    const handleResizeStart = useCallback((e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsResizing(true);
+        resizeRef.current = {
+            startX: e.clientX,
+            startY: e.clientY,
+            startWidth: size.width,
+            startHeight: size.height,
+        };
+
+        const handleMouseMove = (moveEvent: MouseEvent) => {
+            const deltaX = moveEvent.clientX - resizeRef.current.startX;
+            const newWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, resizeRef.current.startWidth + deltaX));
+            const newHeight = Math.round(newWidth * 9 / 16); // Maintain 16:9 aspect ratio
+            setSize({ width: newWidth, height: Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, newHeight)) });
+        };
+
+        const handleMouseUp = () => {
+            setIsResizing(false);
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+        };
+
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+    }, [size]);
+
     return (
         <div className="group relative" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
+            {/* Hidden file input */}
+            <input
+                ref={fileInputRef}
+                type="file"
+                accept="video/*"
+                onChange={handleFileChange}
+                className="hidden"
+            />
+
             {/* Top Label */}
             <div className="absolute -top-7 left-1 flex items-center gap-2 px-1 py-1 z-20">
                 <input value={label} onChange={(e) => setLabel(e.target.value)} className="bg-transparent text-[10px] font-semibold text-zinc-500 uppercase tracking-widest focus:outline-none focus:text-white w-28 border-b border-transparent focus:border-white/20 transition-all" placeholder="NAME SCENE..." />
@@ -75,64 +188,92 @@ function VideoNode({ id, data, selected }: NodeProps) {
             </div>
 
             {/* Main Node Body */}
-            <div className={`relative w-[280px] h-[160px] rounded-[20px] overflow-hidden bg-[#0A0A0A] border transition-all duration-300 ${selected ? 'border-zinc-500/50 ring-1 ring-zinc-700/50' : 'border-white/5 hover:border-white/10'}`}>
+            <div
+                className={`relative overflow-hidden bg-[#0A0A0A] border transition-all duration-300 rounded-[16px] ${selected ? 'border-zinc-500/50 ring-1 ring-zinc-700/50' : 'border-white/5 hover:border-white/10'}`}
+                style={{ width: size.width, height: size.height }}
+            >
                 {nodeData.videoUrl ? (
                     <div className="relative w-full h-full group/video">
                         <video ref={videoRef} src={nodeData.videoUrl} poster={nodeData.thumbnailUrl} className="w-full h-full object-cover" loop onEnded={() => setIsPlaying(false)} />
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/video:opacity-100 transition-opacity flex items-center justify-center">
-                            <button onClick={togglePlay} className="w-10 h-10 rounded-full bg-white/10 border border-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/20">
-                                {isPlaying ? <Pause className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current ml-1" />}
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/video:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                            <button onClick={togglePlay} className="w-8 h-8 rounded-full bg-white/10 border border-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/20">
+                                {isPlaying ? <Pause className="w-3.5 h-3.5 fill-current" /> : <Play className="w-3.5 h-3.5 fill-current ml-0.5" />}
+                            </button>
+                            <button onClick={handleDownload} className="w-8 h-8 rounded-full bg-white/10 border border-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/20">
+                                <Download className="w-3.5 h-3.5" />
                             </button>
                         </div>
-                        <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-md text-[9px] font-medium text-white/90">{nodeData.duration}</div>
+                        <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-md text-[8px] font-medium text-white/90">{nodeData.duration}</div>
                     </div>
                 ) : (
                     <div className="w-full h-full flex flex-col items-center justify-center p-4">
-                        {nodeData.isGenerating ? (
+                        {isUploading ? (
                             <div className="flex flex-col items-center gap-2">
-                                <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center animate-pulse">
-                                    <Clapperboard className="w-4 h-4 text-white/50" />
+                                <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center animate-pulse">
+                                    <Upload className="w-3.5 h-3.5 text-white/50" />
                                 </div>
-                                <p className="text-[10px] text-zinc-500 uppercase tracking-wider">Generating video...</p>
-                                <p className="text-[9px] text-zinc-600">This may take a few minutes</p>
+                                <p className="text-[9px] text-zinc-500 uppercase tracking-wider">Uploading...</p>
+                            </div>
+                        ) : nodeData.isGenerating ? (
+                            <div className="flex flex-col items-center gap-2">
+                                <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center animate-pulse">
+                                    <Clapperboard className="w-3.5 h-3.5 text-white/50" />
+                                </div>
+                                <p className="text-[9px] text-zinc-500 uppercase tracking-wider">Generating...</p>
                             </div>
                         ) : error ? (
                             <div className="flex flex-col items-center gap-2 text-center">
-                                <AlertCircle className="w-5 h-5 text-red-400/60" />
-                                <p className="text-[10px] text-red-400/80 max-w-[200px]">{error}</p>
+                                <AlertCircle className="w-4 h-4 text-red-400/60" />
+                                <p className="text-[9px] text-red-400/80 max-w-[140px]">{error}</p>
                             </div>
                         ) : (
-                            <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center">
-                                <Video className="w-4 h-4 text-zinc-600" />
+                            <div
+                                className="w-8 h-8 rounded-lg bg-white/5 border border-white/5 flex items-center justify-center cursor-pointer hover:bg-white/10 hover:border-white/10 transition-all"
+                                onClick={handleUploadClick}
+                                title="Click to upload a video"
+                            >
+                                <Video className="w-3.5 h-3.5 text-zinc-600" />
                             </div>
                         )}
                     </div>
                 )}
+
+                {/* Resize Handle - Bottom Right */}
+                <div
+                    className={`absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize flex items-end justify-end transition-opacity ${isResizing || isHovered || selected ? 'opacity-100' : 'opacity-0'}`}
+                    onMouseDown={handleResizeStart}
+                >
+                    <div className="w-2 h-2 border-r-2 border-b-2 border-white/30 hover:border-white/50 transition-colors rounded-br" />
+                </div>
             </div>
 
             {/* Toolbar */}
             <NodeToolbar isVisible={selected || isHovered} position={Position.Bottom} offset={10} align="center">
                 <div className="flex items-center gap-1 p-1 bg-[#1A1A1A]/90 backdrop-blur-md border border-white/10 rounded-full shadow-2xl" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
+                    <Button size="icon" variant="ghost" className="h-6 w-6 rounded-full text-zinc-400 hover:text-white hover:bg-white/10" onClick={handleUploadClick} disabled={isUploading}>
+                        <Upload className="w-3 h-3" />
+                    </Button>
+                    <div className="w-px h-3 bg-white/10" />
                     <Select value={nodeData.model} onValueChange={(v) => updateNodeData(id, { model: v })}>
-                        <SelectTrigger className="h-7 border-0 bg-transparent text-[10px] text-zinc-300 w-[90px] focus:ring-0 hover:bg-white/5 rounded-full"><SelectValue placeholder="Model" /></SelectTrigger>
-                        <SelectContent className="bg-[#1A1A1A] border-zinc-800 text-zinc-300 z-50">{VIDEO_MODELS.map(m => <SelectItem key={m.value} value={m.value} className="text-[10px]">{m.label}</SelectItem>)}</SelectContent>
+                        <SelectTrigger className="h-6 border-0 bg-transparent text-[9px] text-zinc-300 w-[70px] focus:ring-0 hover:bg-white/5 rounded-full"><SelectValue placeholder="Model" /></SelectTrigger>
+                        <SelectContent className="bg-[#1A1A1A] border-zinc-800 text-zinc-300 z-50">{VIDEO_MODELS.map(m => <SelectItem key={m.value} value={m.value} className="text-[9px]">{m.label}</SelectItem>)}</SelectContent>
                     </Select>
                     <div className="w-px h-3 bg-white/10" />
                     <Select value={nodeData.duration} onValueChange={(v) => updateNodeData(id, { duration: v })}>
-                        <SelectTrigger className="h-7 border-0 bg-transparent text-[10px] text-zinc-300 w-[55px] focus:ring-0 hover:bg-white/5 rounded-full"><SelectValue placeholder="Dur" /></SelectTrigger>
-                        <SelectContent className="bg-[#1A1A1A] border-zinc-800 text-zinc-300 z-50">{DURATIONS.map(d => <SelectItem key={d.value} value={d.value} className="text-[10px]">{d.label}</SelectItem>)}</SelectContent>
+                        <SelectTrigger className="h-6 border-0 bg-transparent text-[9px] text-zinc-300 w-[45px] focus:ring-0 hover:bg-white/5 rounded-full"><SelectValue placeholder="Dur" /></SelectTrigger>
+                        <SelectContent className="bg-[#1A1A1A] border-zinc-800 text-zinc-300 z-50">{DURATIONS.map(d => <SelectItem key={d.value} value={d.value} className="text-[9px]">{d.label}</SelectItem>)}</SelectContent>
                     </Select>
                     <div className="w-px h-3 bg-white/10" />
-                    <Button size="icon" variant="ghost" className="h-7 w-7 rounded-full text-red-400/80 hover:text-red-400 hover:bg-red-500/10" onClick={() => deleteElements({ nodes: [{ id }] })}><Trash2 className="w-3 h-3" /></Button>
+                    <Button size="icon" variant="ghost" className="h-6 w-6 rounded-full text-red-400/80 hover:text-red-400 hover:bg-red-500/10" onClick={() => deleteElements({ nodes: [{ id }] })}><Trash2 className="w-3 h-3" /></Button>
                     <div className="w-px h-3 bg-white/10" />
                     <Button
                         size="sm"
-                        className="h-6 text-[10px] bg-white text-black hover:bg-zinc-200 rounded-full px-2.5 font-bold disabled:opacity-50"
+                        className="h-5 text-[9px] bg-white text-black hover:bg-zinc-200 rounded-full px-2 font-bold disabled:opacity-50"
                         onClick={handleGenerate}
                         disabled={nodeData.isGenerating}
                     >
-                        {nodeData.isGenerating ? <RefreshCw className="w-3 h-3 mr-1 animate-spin" /> : <Wand2 className="w-3 h-3 mr-1" />}
-                        {nodeData.isGenerating ? 'GENERATING' : 'GENERATE'}
+                        {nodeData.isGenerating ? <RefreshCw className="w-2.5 h-2.5 mr-1 animate-spin" /> : <Wand2 className="w-2.5 h-2.5 mr-1" />}
+                        {nodeData.isGenerating ? 'GEN' : 'GENERATE'}
                     </Button>
                 </div>
             </NodeToolbar>

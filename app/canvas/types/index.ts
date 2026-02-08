@@ -12,6 +12,7 @@ export interface ImageNodeData extends BaseNodeData {
     model: ImageModel;
     aspectRatio: '1:1' | '16:9' | '9:16' | '4:3' | '3:4';
     isGenerating?: boolean;
+    size?: number;
 }
 
 export type ImageModel =
@@ -40,6 +41,8 @@ export interface VideoNodeData extends BaseNodeData {
     duration: '4s' | '8s' | '16s';
     isGenerating?: boolean;
     isPlaying?: boolean;
+    width?: number;
+    height?: number;
 }
 
 export type VideoModel =
@@ -63,6 +66,8 @@ export const VIDEO_MODELS: { value: VideoModel; label: string }[] = [
 export interface TextNodeData extends BaseNodeData {
     text?: string;
     model: TextModel;
+    width?: number;
+    height?: number;
 }
 
 export type TextModel =

@@ -42,6 +42,7 @@ import {
     BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
 import { CreateItemModal } from '@/components/CreateItemModal';
+import { toast } from 'sonner';
 import { useRef } from 'react';
 import type { Folder as FolderType, Project, Document, Link, File as FileType } from '@/lib/db/schema';
 
@@ -289,9 +290,13 @@ export default function DashboardPage() {
                 method: 'PATCH',
                 body: JSON.stringify({ id, type, updates: { isStarred: !currentStatus } }),
             });
-            if (res.ok) fetchFolderContents(currentFolderId);
+            if (res.ok) {
+                fetchFolderContents(currentFolderId);
+                toast.success(currentStatus ? 'Removed from favorites' : 'Added to favorites');
+            }
         } catch (err) {
             console.error('Toggle Star Error', err);
+            toast.error('Failed to update favorite status');
         }
     };
 
@@ -333,9 +338,11 @@ export default function DashboardPage() {
             if (res.ok) {
                 fetchFolderContents(currentFolderId);
                 fetchTree();
+                toast.success(`Folder "${name}" created`);
             }
         } catch (error) {
             console.error('[Dashboard] Failed to create folder:', error);
+            toast.error('Failed to create folder');
         }
     };
 
@@ -352,10 +359,12 @@ export default function DashboardPage() {
             });
             if (res.ok) {
                 const { project } = await res.json();
+                toast.success(`Canvas "${name}" created`);
                 router.push(`/canvas?project=${project.id}`);
             }
         } catch (error) {
             console.error('[Dashboard] Failed to create canvas:', error);
+            toast.error('Failed to create canvas');
         }
     };
 
@@ -373,10 +382,12 @@ export default function DashboardPage() {
             });
             if (res.ok) {
                 const { document } = await res.json();
+                toast.success(`Note "${name}" created`);
                 router.push(`/document/${document.id}`);
             }
         } catch (error) {
             console.error('[Dashboard] Failed to create document:', error);
+            toast.error('Failed to create note');
         }
     };
 
@@ -395,9 +406,11 @@ export default function DashboardPage() {
             });
             if (res.ok) {
                 fetchFolderContents(currentFolderId);
+                toast.success(`Link "${name}" saved`);
             }
         } catch (error) {
             console.error('[Dashboard] Failed to create link:', error);
+            toast.error('Failed to save link');
         }
     };
 
@@ -420,9 +433,11 @@ export default function DashboardPage() {
 
             if (res.ok) {
                 fetchFolderContents(currentFolderId);
+                toast.success(`File "${file.name}" uploaded`);
             }
         } catch (error) {
             console.error('[Dashboard] Failed to upload file:', error);
+            toast.error('Failed to upload file');
         }
     };
 
@@ -438,8 +453,10 @@ export default function DashboardPage() {
                 })
             });
             fetchFolderContents(currentFolderId);
+            toast.success('Moved to trash');
         } catch (error) {
             console.error('Failed to move to trash:', error);
+            toast.error('Failed to move to trash');
         }
     };
 
@@ -455,8 +472,10 @@ export default function DashboardPage() {
                 })
             });
             fetchFolderContents(currentFolderId);
+            toast.success('Item restored');
         } catch (error) {
             console.error('Failed to restore:', error);
+            toast.error('Failed to restore item');
         }
     };
 
@@ -467,8 +486,10 @@ export default function DashboardPage() {
                 method: 'DELETE'
             });
             fetchFolderContents(currentFolderId);
+            toast.success('Item permanently deleted');
         } catch (error) {
             console.error('Failed to delete forever:', error);
+            toast.error('Failed to delete item');
         }
     };
 
