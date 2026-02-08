@@ -67,21 +67,18 @@ function NoteNode({ id, data, selected }: NodeProps) {
                         : "hover:border-white/20"
                 )}
             >
-                {/* Header - Slimmer & Simpler */}
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-white/[0.02] border-b border-white/[0.05] shrink-0 h-9 drag-handle">
-                    <div className="flex items-center justify-center w-4 h-4 rounded text-blue-400">
-                        <FileText className="w-3.5 h-3.5" />
-                    </div>
-                    <span className="text-[12px] font-medium text-zinc-300 truncate flex-1 leading-none pt-0.5">
-                        {nodeData.title || 'Untitled Note'}
+                {/* Header - Minimalist & Refined */}
+                <div className="flex items-center px-3 bg-white/[0.01] border-b border-white/[0.04] shrink-0 h-8 drag-handle justify-between">
+                    <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-[0.08em] truncate">
+                        {nodeData.title || 'Untitled'}
                     </span>
                     <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
                             onClick={handleOpen}
-                            className="p-1 hover:bg-white/10 rounded text-zinc-500 hover:text-white transition-colors"
+                            className="p-1 hover:bg-white/10 rounded transition-colors text-zinc-600 hover:text-zinc-300"
                             title="Open Full Document"
                         >
-                            <Maximize2 className="w-3 h-3" />
+                            <Maximize2 className="w-2.5 h-2.5" />
                         </button>
                     </div>
                 </div>
