@@ -320,119 +320,120 @@ export default function DocumentPage() {
             <div className="flex-1 flex flex-col w-full h-full overflow-hidden">
                 {/* Header */}
                 <header className="h-14 bg-zinc-950/80 backdrop-blur-xl border-b border-zinc-800 shrink-0 flex items-center justify-between px-4 z-50">
-                    <div className="flex items-center justify-between px-4 py-3">
-                        <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
+                        {isTreeCollapsed && (
                             <button
-                                onClick={() => setIsTreeCollapsed(!isTreeCollapsed)}
-                                className={`p-2 rounded-lg transition-colors ${!isTreeCollapsed ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}
+                                onClick={() => setIsTreeCollapsed(false)}
+                                className="p-2 rounded-lg bg-zinc-800/50 text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+                                title="Show Workspace"
                             >
                                 <PanelLeft className="w-4 h-4" />
                             </button>
-                            <div className="h-4 w-px bg-zinc-800 mx-1" />
+                        )}
+                        <div className="h-4 w-px bg-zinc-800 mx-1 hidden sm:block" />
 
-                            {/* Breadcrumbs + Doc Name */}
-                            <div className="flex items-center">
-                                <Breadcrumb>
-                                    <BreadcrumbList className="gap-1 sm:gap-1">
-                                        {breadcrumbs.map((crumb: { id: string | null; name: string }, idx: number) => (
-                                            <React.Fragment key={crumb.id || 'root'}>
-                                                <BreadcrumbItem className="hidden md:block">
-                                                    <BreadcrumbLink
-                                                        onClick={() => router.push(crumb.id ? `/dashboard?folderId=${crumb.id}` : '/dashboard')}
-                                                        className="text-zinc-500 hover:text-white transition-colors cursor-pointer text-sm font-medium"
-                                                    >
-                                                        {idx === 0 && <span className="mr-1 text-zinc-400">Grain</span>}
-                                                        {idx > 0 && crumb.name}
-                                                    </BreadcrumbLink>
-                                                </BreadcrumbItem>
-                                                <BreadcrumbSeparator className="hidden md:block text-zinc-700">
-                                                    <ChevronRight className="w-3.5 h-3.5" />
-                                                </BreadcrumbSeparator>
-                                            </React.Fragment>
-                                        ))}
-                                        <BreadcrumbItem>
-                                            <input
-                                                type="text"
-                                                value={docName}
-                                                onChange={(e) => updateName(e.target.value)}
-                                                className="bg-transparent text-sm font-semibold text-white focus:outline-none border-b border-transparent hover:border-zinc-700 px-1 py-0.5 transition-all max-w-[200px]"
-                                            />
-                                        </BreadcrumbItem>
-                                    </BreadcrumbList>
-                                </Breadcrumb>
-                            </div>
-
-                            {/* Save Status */}
-                            <div className="flex items-center gap-1 text-sm">
-                                {saveStatus === 'saving' && (
-                                    <>
-                                        <Cloud className="w-4 h-4 text-yellow-500 animate-pulse" />
-                                        <span className="text-yellow-500">Saving...</span>
-                                    </>
-                                )}
-                                {saveStatus === 'saved' && (
-                                    <>
-                                        <Check className="w-4 h-4 text-green-500" />
-                                        <span className="text-green-500">Saved</span>
-                                    </>
-                                )}
-                                {saveStatus === 'error' && (
-                                    <>
-                                        <CloudOff className="w-4 h-4 text-red-500" />
-                                        <span className="text-red-500">Error</span>
-                                    </>
-                                )}
-                            </div>
+                        {/* Breadcrumbs + Doc Name */}
+                        <div className="flex items-center">
+                            <Breadcrumb>
+                                <BreadcrumbList className="gap-1 sm:gap-1">
+                                    {breadcrumbs.map((crumb: { id: string | null; name: string }, idx: number) => (
+                                        <React.Fragment key={crumb.id || 'root'}>
+                                            <BreadcrumbItem className="hidden md:block">
+                                                <BreadcrumbLink
+                                                    onClick={() => router.push(crumb.id ? `/dashboard?folderId=${crumb.id}` : '/dashboard')}
+                                                    className="text-zinc-500 hover:text-white transition-colors cursor-pointer text-sm font-medium"
+                                                >
+                                                    {idx === 0 && <span className="mr-1 text-zinc-400">Grain</span>}
+                                                    {idx > 0 && crumb.name}
+                                                </BreadcrumbLink>
+                                            </BreadcrumbItem>
+                                            <BreadcrumbSeparator className="hidden md:block text-zinc-700">
+                                                <ChevronRight className="w-3.5 h-3.5" />
+                                            </BreadcrumbSeparator>
+                                        </React.Fragment>
+                                    ))}
+                                    <BreadcrumbItem>
+                                        <input
+                                            type="text"
+                                            value={docName}
+                                            onChange={(e) => updateName(e.target.value)}
+                                            className="bg-transparent text-sm font-semibold text-white focus:outline-none border-b border-transparent hover:border-zinc-700 px-1 py-0.5 transition-all max-w-[200px]"
+                                        />
+                                    </BreadcrumbItem>
+                                </BreadcrumbList>
+                            </Breadcrumb>
                         </div>
 
-                        <div className="flex items-center gap-2">
-                            {/* More Options */}
-                            <div className="relative">
-                                <button
-                                    onClick={() => setShowDropdown(!showDropdown)}
-                                    className="p-2 hover:bg-zinc-800 rounded-lg transition-colors"
-                                >
-                                    <MoreHorizontal className="w-5 h-5" />
-                                </button>
+                        {/* Save Status */}
+                        <div className="flex items-center gap-1 text-sm">
+                            {saveStatus === 'saving' && (
+                                <>
+                                    <Cloud className="w-4 h-4 text-yellow-500 animate-pulse" />
+                                    <span className="text-yellow-500">Saving...</span>
+                                </>
+                            )}
+                            {saveStatus === 'saved' && (
+                                <>
+                                    <Check className="w-4 h-4 text-green-500" />
+                                    <span className="text-green-500">Saved</span>
+                                </>
+                            )}
+                            {saveStatus === 'error' && (
+                                <>
+                                    <CloudOff className="w-4 h-4 text-red-500" />
+                                    <span className="text-red-500">Error</span>
+                                </>
+                            )}
+                        </div>
+                    </div>
 
-                                {showDropdown && (
-                                    <>
-                                        <div
-                                            className="fixed inset-0 z-40"
-                                            onClick={() => setShowDropdown(false)}
-                                        />
-                                        <div className="absolute right-0 top-full mt-1 w-48 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl z-50 py-1">
-                                            <button
-                                                onClick={toggleStar}
-                                                className="w-full flex items-center gap-3 px-3 py-2 hover:bg-zinc-800 transition-colors text-left"
-                                            >
-                                                <Star
-                                                    className={`w-4 h-4 ${doc?.isStarred ? 'fill-yellow-500 text-yellow-500' : ''}`}
-                                                />
-                                                {doc?.isStarred ? 'Remove from favorites' : 'Add to favorites'}
-                                            </button>
-                                            <button
-                                                onClick={() => {
-                                                    // Share functionality
-                                                    setShowDropdown(false);
-                                                }}
-                                                className="w-full flex items-center gap-3 px-3 py-2 hover:bg-zinc-800 transition-colors text-left"
-                                            >
-                                                <Share2 className="w-4 h-4" />
-                                                Share
-                                            </button>
-                                            <div className="border-t border-zinc-700 my-1" />
-                                            <button
-                                                onClick={deleteDocument}
-                                                className="w-full flex items-center gap-3 px-3 py-2 hover:bg-red-900/30 transition-colors text-left text-red-400"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                                Move to trash
-                                            </button>
-                                        </div>
-                                    </>
-                                )}
-                            </div>
+                    <div className="flex items-center gap-2">
+                        {/* More Options */}
+                        <div className="relative">
+                            <button
+                                onClick={() => setShowDropdown(!showDropdown)}
+                                className="p-2 hover:bg-zinc-800 rounded-lg transition-colors"
+                            >
+                                <MoreHorizontal className="w-5 h-5" />
+                            </button>
+
+                            {showDropdown && (
+                                <>
+                                    <div
+                                        className="fixed inset-0 z-40"
+                                        onClick={() => setShowDropdown(false)}
+                                    />
+                                    <div className="absolute right-0 top-full mt-1 w-48 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl z-50 py-1">
+                                        <button
+                                            onClick={toggleStar}
+                                            className="w-full flex items-center gap-3 px-3 py-2 hover:bg-zinc-800 transition-colors text-left"
+                                        >
+                                            <Star
+                                                className={`w-4 h-4 ${doc?.isStarred ? 'fill-yellow-500 text-yellow-500' : ''}`}
+                                            />
+                                            {doc?.isStarred ? 'Remove from favorites' : 'Add to favorites'}
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                // Share functionality
+                                                setShowDropdown(false);
+                                            }}
+                                            className="w-full flex items-center gap-3 px-3 py-2 hover:bg-zinc-800 transition-colors text-left"
+                                        >
+                                            <Share2 className="w-4 h-4" />
+                                            Share
+                                        </button>
+                                        <div className="border-t border-zinc-700 my-1" />
+                                        <button
+                                            onClick={deleteDocument}
+                                            className="w-full flex items-center gap-3 px-3 py-2 hover:bg-red-900/30 transition-colors text-left text-red-400"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                            Move to trash
+                                        </button>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     </div>
                 </header>

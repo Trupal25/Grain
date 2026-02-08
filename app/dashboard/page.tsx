@@ -611,14 +611,16 @@ export default function DashboardPage() {
             {/* Main Content */}
             <div className="flex-1 flex flex-col overflow-hidden bg-zinc-950">
                 {/* Header */}
-                <header className="h-12 flex items-center gap-3 px-4 border-b border-zinc-800 shrink-0">
-                    <button
-                        onClick={() => setIsTreeCollapsed(!isTreeCollapsed)}
-                        className={`p-1.5 rounded-lg transition-colors ${isTreeCollapsed ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}
-                        title={isTreeCollapsed ? "Show Workspace" : "Hide Workspace"}
-                    >
-                        <PanelLeft className="w-4 h-4" />
-                    </button>
+                <header className="h-12 flex items-center gap-2 px-3 border-b border-zinc-800 shrink-0">
+                    {isTreeCollapsed && (
+                        <button
+                            onClick={() => setIsTreeCollapsed(false)}
+                            className="p-1.5 rounded-lg bg-zinc-800/50 text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+                            title="Show Workspace"
+                        >
+                            <PanelLeft className="w-4 h-4" />
+                        </button>
+                    )}
 
                     {/* Back button */}
                     {breadcrumbs.length > 1 && (

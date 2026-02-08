@@ -283,42 +283,42 @@ function GrainCanvas() {
         </div>
         <div className="flex-1 relative h-full">
           {/* Header */}
-          <div className="absolute top-6 left-24 z-50 select-none flex items-center gap-3">
-            <button
-              onClick={() => setIsTreeCollapsed(!isTreeCollapsed)}
-              className={cn(
-                "p-2 rounded-lg bg-zinc-900/50 border border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors pointer-events-auto",
-                !isTreeCollapsed && "lg:hidden" // Optionally hide on large screens if sidebar takes space? No, keep it.
-              )}
-            >
-              <PanelLeft className="w-4 h-4" />
-            </button>
+          <div className="absolute top-6 left-8 z-50 select-none flex items-center gap-4">
+            {isTreeCollapsed && (
+              <button
+                onClick={() => setIsTreeCollapsed(false)}
+                className="p-2 rounded-lg bg-zinc-900/80 border border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all pointer-events-auto shadow-2xl backdrop-blur-md"
+                title="Show Workspace"
+              >
+                <PanelLeft className="w-4 h-4" />
+              </button>
+            )}
             <div className="pointer-events-none">
               <h1 className="text-sm font-bold tracking-tight text-white flex items-center gap-2">
-                <div className="w-4 h-4 rounded-md bg-white text-black flex items-center justify-center text-[10px] font-black">G</div>
-                Grain
+                <div className="w-5 h-5 rounded-md bg-white text-black flex items-center justify-center text-[11px] font-black shadow-lg">G</div>
+                <span className="opacity-90">Grain</span>
               </h1>
-              <div className="flex items-center gap-2 mt-0.5 ml-6">
-                <p className="text-[10px] text-zinc-600 font-mono">{projectName}</p>
+              <div className="flex items-center gap-2 mt-0.5 ml-0 leading-none">
+                <p className="text-[10px] text-zinc-600 font-mono tracking-tight">{projectName}</p>
                 {/* Save Status Indicator */}
-                <div className="flex items-center gap-1 text-[10px]">
+                <div className="flex items-center gap-1.5 text-[10px]">
                   {saveStatus === 'saving' && (
-                    <>
-                      <Cloud className="w-3 h-3 text-yellow-500 animate-pulse" />
-                      <span className="text-yellow-500">Saving...</span>
-                    </>
+                    <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-full bg-yellow-500/10 border border-yellow-500/20 mr-1">
+                      <Cloud className="w-2.5 h-2.5 text-yellow-500 animate-pulse" />
+                      <span className="text-yellow-500/80 font-medium tracking-wide uppercase text-[9px]">Saving</span>
+                    </div>
                   )}
                   {saveStatus === 'saved' && (
-                    <>
-                      <Check className="w-3 h-3 text-green-500" />
-                      <span className="text-green-500">Saved</span>
-                    </>
+                    <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 mr-1">
+                      <Check className="w-2.5 h-2.5 text-emerald-500" />
+                      <span className="text-emerald-500/80 font-medium tracking-wide uppercase text-[9px]">Saved</span>
+                    </div>
                   )}
                   {saveStatus === 'error' && (
-                    <>
-                      <CloudOff className="w-3 h-3 text-red-500" />
-                      <span className="text-red-500">Error</span>
-                    </>
+                    <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-full bg-rose-500/10 border border-rose-500/20 mr-1">
+                      <CloudOff className="w-2.5 h-2.5 text-rose-500" />
+                      <span className="text-rose-500/80 font-medium tracking-wide uppercase text-[9px]">Error</span>
+                    </div>
                   )}
                 </div>
               </div>
