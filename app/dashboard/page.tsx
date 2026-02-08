@@ -30,6 +30,7 @@ import {
     RotateCcw,
     X,
     Star,
+    PanelLeft,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,6 +46,10 @@ import { CreateItemModal } from '@/components/CreateItemModal';
 import { toast } from 'sonner';
 import { useRef } from 'react';
 import type { Folder as FolderType, Project, Document, Link, File as FileType } from '@/lib/db/schema';
+import { Sidebar } from '@/components/Sidebar';
+import { useSearchParams } from 'next/navigation';
+import { AnimatedFolder } from '@/components/ui/animated-folder';
+import { WorkspaceSidebar } from '@/components/WorkspaceSidebar';
 
 interface BreadcrumbData {
     id: string | null;
@@ -64,55 +69,7 @@ interface FolderTreeItemProps {
     currentFolderId: string | null;
 }
 
-function FolderTreeItem({ folder, allFolders, expandedFolders, toggleFolderExpand, openFolder, currentFolderId }: FolderTreeItemProps) {
-    const isExpanded = expandedFolders.has(folder.id);
-    const isActive = currentFolderId === folder.id;
-    const children = allFolders.filter(f => f.parentFolderId === folder.id);
 
-    return (
-        <div className="flex flex-col">
-            <button
-                onClick={() => openFolder(folder)}
-                className={`w-full flex items-center gap-2 px-2 py-1 text-sm rounded-lg transition-colors group ${isActive ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}
-            >
-                <div
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        toggleFolderExpand(e, folder.id);
-                    }}
-                    className="p-1 hover:bg-zinc-700 rounded transition-colors cursor-pointer"
-                >
-                    {children.length > 0 ? (
-                        isExpanded ? (
-                            <ChevronDown className="w-3 h-3" />
-                        ) : (
-                            <ChevronRight className="w-3 h-3" />
-                        )
-                    ) : (
-                        <div className="w-3 h-3" />
-                    )}
-                </div>
-                <span className="text-base leading-none">{folder.icon || '📁'}</span>
-                <span className="truncate flex-1 text-left">{folder.name}</span>
-            </button>
-            {isExpanded && children.length > 0 && (
-                <div className="ml-4 pl-2 border-l border-zinc-800 mt-0.5 space-y-0.5">
-                    {children.map(child => (
-                        <FolderTreeItem
-                            key={child.id}
-                            folder={child}
-                            allFolders={allFolders}
-                            expandedFolders={expandedFolders}
-                            toggleFolderExpand={toggleFolderExpand}
-                            openFolder={openFolder}
-                            currentFolderId={currentFolderId}
-                        />
-                    ))}
-                </div>
-            )}
-        </div>
-    );
-}
 
 interface ItemActionsProps {
     id: string;
@@ -166,6 +123,7 @@ function ItemActions({ id, type, isStarred, isTrashView, onToggleStar, onMoveToT
 export default function DashboardPage() {
     const { user, isLoaded } = useUser();
     const router = useRouter();
+    const searchParams = useSearchParams();
 
     const [folders, setFolders] = useState<FolderType[]>([]);
     const [projects, setProjects] = useState<Project[]>([]);
@@ -173,6 +131,8 @@ export default function DashboardPage() {
     const [links, setLinks] = useState<Link[]>([]);
     const [files, setFiles] = useState<FileType[]>([]);
     const [allFolders, setAllFolders] = useState<FolderType[]>([]);
+    const [allDocuments, setAllDocuments] = useState<Document[]>([]);
+    const [allProjects, setAllProjects] = useState<Project[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
@@ -191,6 +151,47 @@ export default function DashboardPage() {
     const [noteModalOpen, setNoteModalOpen] = useState(false);
     const [canvasModalOpen, setCanvasModalOpen] = useState(false);
     const [linkModalOpen, setLinkModalOpen] = useState(false);
+    const [isTreeCollapsed, setIsTreeCollapsed] = useState(false);
+
+    // Sync state with URL params
+    useEffect(() => {
+        const view = searchParams.get('view');
+        const filter = searchParams.get('filter');
+        const create = searchParams.get('create');
+
+        if (view === 'trash') {
+            setIsTrashView(true);
+            setIsStarredView(false);
+            setCurrentFolderId(null);
+            setBreadcrumbs([{ id: null, name: 'Trash' }]);
+            setSearchQuery('');
+            setActiveFilter('all');
+        } else if (view === 'favorites') { // Handle favorites if needed, though usually handled by state
+            // Optional: specific favorites view
+        } else {
+            if (!searchParams.has('folderId') && !isTrashView) {
+                // If we are at root, we reset folder context
+                setCurrentFolderId(null);
+                setBreadcrumbs([{ id: null, name: 'Home', type: 'home' }]);
+            }
+        }
+
+        if (filter) {
+            setActiveFilter(filter as any);
+        } else {
+            if (!searchParams.get('folderId')) {
+                setActiveFilter('all');
+            }
+        }
+
+        if (create === 'true') {
+            setNoteModalOpen(true);
+            // Optionally remove the param to avoid reopening on refresh
+            const newParams = new URLSearchParams(searchParams.toString());
+            newParams.delete('create');
+            router.replace(`/dashboard?${newParams.toString()}`);
+        }
+    }, [searchParams]);
 
     const isSearchActive = searchQuery.length > 0;
 
@@ -230,10 +231,25 @@ export default function DashboardPage() {
 
     const fetchTree = useCallback(async () => {
         try {
-            const res = await fetch('/api/folders?all=true');
-            if (res.ok) {
-                const data = await res.json();
+            const [foldersRes, docsRes, projectsRes] = await Promise.all([
+                fetch('/api/folders?all=true'),
+                fetch('/api/documents?all=true'),
+                fetch('/api/projects')
+            ]);
+
+            if (foldersRes.ok) {
+                const data = await foldersRes.json();
                 setAllFolders(data.folders || []);
+            }
+
+            if (docsRes.ok) {
+                const data = await docsRes.json();
+                setAllDocuments(data.documents || []);
+            }
+
+            if (projectsRes.ok) {
+                const data = await projectsRes.json();
+                setAllProjects(data.projects || []);
             }
         } catch (error) {
             console.error('[Dashboard] Failed to fetch tree:', error);
@@ -550,204 +566,60 @@ export default function DashboardPage() {
                 className="hidden"
                 onChange={handleFileUpload}
             />
-            {/* Left Icon Sidebar */}
-            <div className="w-14 flex flex-col items-center py-4 bg-zinc-900 border-r border-zinc-800">
-                {/* New Button */}
-                <button
-                    onClick={() => setNoteModalOpen(true)}
-                    className="w-10 h-10 rounded-xl bg-zinc-700 hover:bg-zinc-600 flex items-center justify-center mb-4 transition-colors"
-                >
-                    <Plus className="w-5 h-5" />
-                </button>
-
-                <div className="w-8 h-px bg-zinc-700 mb-4" />
-
-                {/* Navigation Icons */}
-                <div className="flex flex-col gap-2">
-                    <button
-                        onClick={() => {
-                            const searchInput = document.querySelector('input[placeholder="Search anything..."]') as HTMLInputElement;
-                            searchInput?.focus();
-                        }}
-                        className="w-10 h-10 rounded-lg hover:bg-zinc-800 flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
-                    >
-                        <Search className="w-5 h-5" />
-                    </button>
-                    <button
-                        onClick={() => {
-                            setCurrentFolderId(null);
-                            setBreadcrumbs([{ id: null, name: 'Home', type: 'home' }]);
-                            setIsTrashView(false);
-                            setIsStarredView(false);
-                            setActiveFilter('all');
-                        }}
-                        className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${currentFolderId === null && !isTrashView && !isStarredView && activeFilter === 'all' ? 'bg-zinc-800 text-white' : 'hover:bg-zinc-800 text-zinc-400 hover:text-white'}`}
-                    >
-                        <Home className="w-5 h-5" />
-                    </button>
-                    <button className="w-10 h-10 rounded-lg hover:bg-zinc-800 flex items-center justify-center text-zinc-400 hover:text-white transition-colors">
-                        <MessageSquare className="w-5 h-5" />
-                    </button>
-                    <button
-                        onClick={() => setActiveFilter('documents')}
-                        className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${activeFilter === 'documents' ? 'bg-zinc-800 text-white' : 'hover:bg-zinc-800 text-zinc-400 hover:text-white'}`}
-                        title="Notes"
-                    >
-                        <FileText className="w-5 h-5" />
-                    </button>
-                    <button
-                        onClick={() => setActiveFilter('files')}
-                        className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${activeFilter === 'files' ? 'bg-zinc-800 text-white' : 'hover:bg-zinc-800 text-zinc-400 hover:text-white'}`}
-                        title="Media"
-                    >
-                        <ImageIcon className="w-5 h-5" />
-                    </button>
-                    <button
-                        onClick={() => setActiveFilter('links')}
-                        className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${activeFilter === 'links' ? 'bg-zinc-800 text-white' : 'hover:bg-zinc-800 text-zinc-400 hover:text-white'}`}
-                        title="Links"
-                    >
-                        <Link2 className="w-5 h-5" />
-                    </button>
-                    <button
-                        onClick={() => setActiveFilter('projects')}
-                        className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${activeFilter === 'projects' ? 'bg-zinc-800 text-white' : 'hover:bg-zinc-800 text-zinc-400 hover:text-white'}`}
-                        title="Canvases"
-                    >
-                        <Layout className="w-5 h-5" />
-                    </button>
-                </div>
-
-                <div className="flex-1" />
-
-                {/* Bottom Icons */}
-                <div className="flex flex-col gap-2">
-                    <button className="w-10 h-10 rounded-lg hover:bg-zinc-800 flex items-center justify-center text-zinc-400 hover:text-white transition-colors">
-                        <MoreHorizontal className="w-5 h-5" />
-                    </button>
-                    <button
-                        onClick={() => {
-                            setIsTrashView(true);
-                            setIsStarredView(false);
-                            setCurrentFolderId(null);
-                            setBreadcrumbs([{ id: null, name: 'Trash' }]);
-                            setSearchQuery('');
-                            setActiveFilter('all');
-                        }}
-                        className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${isTrashView ? 'bg-zinc-800 text-white' : 'hover:bg-zinc-800 text-zinc-400 hover:text-white'}`}
-                        title="Trash"
-                    >
-                        <Trash2 className="w-5 h-5" />
-                    </button>
-                </div>
-
-                <div className="w-8 h-px bg-zinc-700 my-4" />
-
-                {/* User */}
-                <UserButton afterSignOutUrl="/" />
-            </div>
+            {/* Replaced Icon Sidebar with Global Sidebar */}
+            <Sidebar
+                onToggleTree={() => setIsTreeCollapsed(!isTreeCollapsed)}
+                isTreeVisible={!isTreeCollapsed}
+            />
 
             {/* Tree Sidebar */}
-            <div className="w-56 flex flex-col bg-zinc-900/50 border-r border-zinc-800">
-                {/* Sidebar Header */}
-                <div className="p-3 border-b border-zinc-800">
-                    <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-md bg-zinc-700 flex items-center justify-center text-xs font-bold text-white">
-                            G
-                        </div>
-                        <span className="font-bold text-sm tracking-tight">GRAIN</span>
-                        <div className="ml-auto flex items-center gap-1">
-                            <button className="p-1 hover:bg-zinc-800 rounded transition-colors" title="Grid View">
-                                <Grid3X3 className="w-3.5 h-3.5 text-zinc-500" />
-                            </button>
-                            <button className="p-1 hover:bg-zinc-800 rounded transition-colors" title="Graph View">
-                                <Layers className="w-3.5 h-3.5 text-zinc-500" />
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Credits Display */}
-                <div className="mx-3 mt-4 p-3 rounded-xl bg-zinc-800 border border-zinc-700">
-                    <div className="text-[10px] uppercase tracking-wider text-zinc-400 font-bold mb-1">Credits</div>
-                    <div className="flex items-center gap-1.5">
-                        <div className="w-2 h-2 rounded-full bg-zinc-500 animate-pulse" />
-                        <span className="text-sm font-semibold">{credits} tokens</span>
-                    </div>
-                </div>
-
-                {/* Tree Structure */}
-                <div className="flex-1 overflow-y-auto p-2">
-                    {/* Workspace */}
-                    <button
-                        onClick={() => { setCurrentFolderId(null); setBreadcrumbs([{ id: null, name: 'Home' }]); }}
-                        className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors mb-2"
-                    >
-                        <Home className="w-4 h-4" />
-                        <span>Workspace</span>
-                    </button>
-
-                    {/* Folders Tree */}
-                    <div className="space-y-0.5">
-                        {allFolders
-                            .filter(f => !f.parentFolderId)
-                            .map(folder => (
-                                <FolderTreeItem
-                                    key={folder.id}
-                                    folder={folder}
-                                    allFolders={allFolders}
-                                    expandedFolders={expandedFolders}
-                                    toggleFolderExpand={toggleFolderExpand}
-                                    openFolder={openFolder}
-                                    currentFolderId={currentFolderId}
-                                />
-                            ))}
-                    </div>
-                </div>
-
-                {/* Favorites & Trash */}
-                <div className="p-2 border-t border-zinc-800">
-                    <button
-                        onClick={() => {
-                            setIsStarredView(true);
-                            setIsTrashView(false);
-                            setCurrentFolderId(null);
-                            setBreadcrumbs([{ id: null, name: 'Favorites', type: 'favorites' }]);
-                            setSearchQuery('');
-                            setActiveFilter('all');
-                        }}
-                        className={`w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-lg transition-colors mb-1 ${isStarredView
-                            ? 'bg-zinc-800 text-white'
-                            : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
-                            }`}
-                    >
-                        <Star className="w-4 h-4" />
-                        <span>Favorites</span>
-                    </button>
-                    <button
-                        onClick={() => {
-                            setIsTrashView(true);
-                            setIsStarredView(false);
-                            setCurrentFolderId(null);
-                            setBreadcrumbs([{ id: null, name: 'Trash', type: 'trash' }]);
-                            setSearchQuery('');
-                            setActiveFilter('all');
-                        }}
-                        className={`w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-lg transition-colors ${isTrashView
-                            ? 'bg-zinc-800 text-white'
-                            : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
-                            }`}
-                    >
-                        <Trash2 className="w-4 h-4" />
-                        <span>Trash</span>
-                    </button>
-                </div>
-            </div>
+            {/* Tree Sidebar */}
+            <WorkspaceSidebar
+                isCollapsed={isTreeCollapsed}
+                onToggleCollapse={() => setIsTreeCollapsed(!isTreeCollapsed)}
+                allFolders={allFolders}
+                allDocuments={allDocuments}
+                allProjects={allProjects}
+                credits={credits}
+                currentFolderId={currentFolderId}
+                onSelectFolder={openFolder}
+                onSelectDocument={(doc) => router.push(`/document/${doc.id}`)}
+                onSelectProject={(proj) => router.push(`/canvas?project=${proj.id}`)}
+                onNavigateHome={() => { setCurrentFolderId(null); setBreadcrumbs([{ id: null, name: 'Home' }]); setActiveFilter('all'); }}
+                onNavigateFavorites={() => {
+                    setIsStarredView(true);
+                    setIsTrashView(false);
+                    setCurrentFolderId(null);
+                    setBreadcrumbs([{ id: null, name: 'Favorites', type: 'favorites' }]);
+                    setSearchQuery('');
+                    setActiveFilter('all');
+                }}
+                onNavigateTrash={() => {
+                    setIsTrashView(true);
+                    setIsStarredView(false);
+                    setCurrentFolderId(null);
+                    setBreadcrumbs([{ id: null, name: 'Trash', type: 'trash' }]);
+                    setSearchQuery('');
+                    setActiveFilter('all');
+                }}
+                expandedFolders={expandedFolders}
+                toggleFolderExpand={toggleFolderExpand}
+                isTrashView={isTrashView}
+                isStarredView={isStarredView}
+            />
 
             {/* Main Content */}
             <div className="flex-1 flex flex-col overflow-hidden bg-zinc-950">
                 {/* Header */}
-                <header className="h-12 flex items-center gap-3 px-4 border-b border-zinc-800">
+                <header className="h-12 flex items-center gap-3 px-4 border-b border-zinc-800 shrink-0">
+                    <button
+                        onClick={() => setIsTreeCollapsed(!isTreeCollapsed)}
+                        className={`p-1.5 rounded-lg transition-colors ${isTreeCollapsed ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}
+                        title={isTreeCollapsed ? "Show Workspace" : "Hide Workspace"}
+                    >
+                        <PanelLeft className="w-4 h-4" />
+                    </button>
+
                     {/* Back button */}
                     {breadcrumbs.length > 1 && (
                         <button
@@ -899,12 +771,14 @@ export default function DashboardPage() {
                                 {displayFolders.length > 0 && (
                                     <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-4 mb-6">
                                         {displayFolders.map((folder) => (
-                                            <div
+                                            <AnimatedFolder
                                                 key={folder.id}
+                                                id={folder.id}
+                                                name={folder.name}
+                                                icon={folder.icon || undefined}
+                                                isStarred={folder.isStarred || false}
                                                 onClick={() => openFolder(folder)}
-                                                className="group relative flex flex-col items-center p-4 hover:bg-zinc-900 rounded-xl transition-colors cursor-pointer"
-                                            >
-                                                <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                                actionSlot={
                                                     <ItemActions
                                                         id={folder.id}
                                                         type="folder"
@@ -915,12 +789,8 @@ export default function DashboardPage() {
                                                         onRestore={restoreItem}
                                                         onDeleteForever={deleteForever}
                                                     />
-                                                </div>
-                                                <div className="w-16 h-14 bg-zinc-800 rounded-lg mb-2 flex items-center justify-center text-2xl">
-                                                    📁
-                                                </div>
-                                                <span className="text-sm text-center truncate w-full">{folder.name}</span>
-                                            </div>
+                                                }
+                                            />
                                         ))}
                                     </div>
                                 )}

@@ -1,7 +1,7 @@
 'use client';
 
-import { memo, useState, useRef, useEffect, useCallback } from 'react';
-import { Handle, Position, NodeProps, NodeToolbar, useReactFlow } from '@xyflow/react';
+import { memo, useState, useRef, useEffect } from 'react';
+import { Handle, Position, NodeProps, NodeToolbar, useReactFlow, NodeResizer } from '@xyflow/react';
 import { VideoNodeData, VIDEO_MODELS, DURATIONS } from '../../types';
 import { useConnectedPrompt, generateVideoAPI } from '@/lib/hooks';
 import { toast } from 'sonner';
@@ -19,8 +19,6 @@ const MIN_WIDTH = 160;
 const MAX_WIDTH = 480;
 const MIN_HEIGHT = 90;
 const MAX_HEIGHT = 270;
-const DEFAULT_WIDTH = 240;
-const DEFAULT_HEIGHT = 135;
 
 function VideoNode({ id, data, selected }: NodeProps) {
     const nodeData = data as unknown as VideoNodeData;
@@ -34,14 +32,8 @@ function VideoNode({ id, data, selected }: NodeProps) {
     const [label, setLabel] = useState(nodeData.label || 'Video');
     const [error, setError] = useState<string | null>(null);
     const [isUploading, setIsUploading] = useState(false);
-    const [size, setSize] = useState<{ width: number; height: number }>({
-        width: (nodeData.width as number) || DEFAULT_WIDTH,
-        height: (nodeData.height as number) || DEFAULT_HEIGHT,
-    });
-    const [isResizing, setIsResizing] = useState(false);
 
     const hoverTimer = useRef<NodeJS.Timeout | undefined>(undefined);
-    const resizeRef = useRef({ startX: 0, startY: 0, startWidth: 0, startHeight: 0 });
 
     const handleMouseEnter = () => {
         if (hoverTimer.current) clearTimeout(hoverTimer.current);
@@ -55,12 +47,6 @@ function VideoNode({ id, data, selected }: NodeProps) {
         const timer = setTimeout(() => updateNodeData(id, { label }), 500);
         return () => clearTimeout(timer);
     }, [label, id, updateNodeData]);
-
-    // Save size to node data
-    useEffect(() => {
-        const timer = setTimeout(() => updateNodeData(id, { width: size.width, height: size.height }), 100);
-        return () => clearTimeout(timer);
-    }, [size, id, updateNodeData]);
 
     const togglePlay = () => {
         if (videoRef.current) {
@@ -141,37 +127,8 @@ function VideoNode({ id, data, selected }: NodeProps) {
         }
     };
 
-    // Resize functionality - maintains 16:9 aspect ratio
-    const handleResizeStart = useCallback((e: React.MouseEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setIsResizing(true);
-        resizeRef.current = {
-            startX: e.clientX,
-            startY: e.clientY,
-            startWidth: size.width,
-            startHeight: size.height,
-        };
-
-        const handleMouseMove = (moveEvent: MouseEvent) => {
-            const deltaX = moveEvent.clientX - resizeRef.current.startX;
-            const newWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, resizeRef.current.startWidth + deltaX));
-            const newHeight = Math.round(newWidth * 9 / 16); // Maintain 16:9 aspect ratio
-            setSize({ width: newWidth, height: Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, newHeight)) });
-        };
-
-        const handleMouseUp = () => {
-            setIsResizing(false);
-            document.removeEventListener('mousemove', handleMouseMove);
-            document.removeEventListener('mouseup', handleMouseUp);
-        };
-
-        document.addEventListener('mousemove', handleMouseMove);
-        document.addEventListener('mouseup', handleMouseUp);
-    }, [size]);
-
     return (
-        <div className="group relative" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
+        <div className="w-full h-full group relative" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
             {/* Hidden file input */}
             <input
                 ref={fileInputRef}
@@ -179,6 +136,17 @@ function VideoNode({ id, data, selected }: NodeProps) {
                 accept="video/*"
                 onChange={handleFileChange}
                 className="hidden"
+            />
+
+            {/* Node Resizer - React Flow's built-in resize component */}
+            <NodeResizer
+                minWidth={MIN_WIDTH}
+                minHeight={MIN_HEIGHT}
+                maxWidth={MAX_WIDTH}
+                maxHeight={MAX_HEIGHT}
+                isVisible={selected || isHovered}
+                lineClassName="!border-zinc-500"
+                handleClassName="!w-2 !h-2 !bg-zinc-400 !border-zinc-600"
             />
 
             {/* Top Label */}
@@ -189,8 +157,7 @@ function VideoNode({ id, data, selected }: NodeProps) {
 
             {/* Main Node Body */}
             <div
-                className={`relative overflow-hidden bg-[#0A0A0A] border transition-all duration-300 rounded-[16px] ${selected ? 'border-zinc-500/50 ring-1 ring-zinc-700/50' : 'border-white/5 hover:border-white/10'}`}
-                style={{ width: size.width, height: size.height }}
+                className={`w-full h-full min-w-[160px] min-h-[90px] overflow-hidden bg-[#0A0A0A] border transition-all duration-300 rounded-[16px] ${selected ? 'border-zinc-500/50 ring-1 ring-zinc-700/50' : 'border-white/5 hover:border-white/10'}`}
             >
                 {nodeData.videoUrl ? (
                     <div className="relative w-full h-full group/video">
@@ -237,14 +204,6 @@ function VideoNode({ id, data, selected }: NodeProps) {
                         )}
                     </div>
                 )}
-
-                {/* Resize Handle - Bottom Right */}
-                <div
-                    className={`absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize flex items-end justify-end transition-opacity ${isResizing || isHovered || selected ? 'opacity-100' : 'opacity-0'}`}
-                    onMouseDown={handleResizeStart}
-                >
-                    <div className="w-2 h-2 border-r-2 border-b-2 border-white/30 hover:border-white/50 transition-colors rounded-br" />
-                </div>
             </div>
 
             {/* Toolbar */}

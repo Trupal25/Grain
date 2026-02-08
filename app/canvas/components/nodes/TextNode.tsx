@@ -1,7 +1,7 @@
 'use client';
 
-import { memo, useState, useEffect, useRef, useCallback } from 'react';
-import { Handle, Position, NodeProps, NodeToolbar, useReactFlow } from '@xyflow/react';
+import { memo, useState, useEffect, useRef } from 'react';
+import { Handle, Position, NodeProps, NodeToolbar, useReactFlow, NodeResizer } from '@xyflow/react';
 import { TextNodeData, TEXT_MODELS } from '../../types';
 import { enhancePromptAPI } from '@/lib/hooks';
 import { toast } from 'sonner';
@@ -9,12 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { AlignLeft, Trash2, Copy, Sparkles, RefreshCw, Check } from 'lucide-react';
 
-const MIN_WIDTH = 200;
+const MIN_WIDTH = 180;
 const MAX_WIDTH = 500;
-const MIN_HEIGHT = 100;
+const MIN_HEIGHT = 80;
 const MAX_HEIGHT = 400;
-const DEFAULT_WIDTH = 280;
-const DEFAULT_HEIGHT = 120;
 
 function TextNode({ id, data, selected }: NodeProps) {
     const nodeData = data as unknown as TextNodeData;
@@ -25,14 +23,8 @@ function TextNode({ id, data, selected }: NodeProps) {
     const [label, setLabel] = useState(nodeData.label || 'Prompt');
     const [isEnhancing, setIsEnhancing] = useState(false);
     const [copied, setCopied] = useState(false);
-    const [size, setSize] = useState<{ width: number; height: number }>({
-        width: (nodeData.width as number) || DEFAULT_WIDTH,
-        height: (nodeData.height as number) || DEFAULT_HEIGHT,
-    });
-    const [isResizing, setIsResizing] = useState(false);
 
     const hoverTimer = useRef<NodeJS.Timeout | undefined>(undefined);
-    const resizeRef = useRef({ startX: 0, startY: 0, startWidth: 0, startHeight: 0 });
 
     const handleMouseEnter = () => {
         if (hoverTimer.current) clearTimeout(hoverTimer.current);
@@ -46,12 +38,6 @@ function TextNode({ id, data, selected }: NodeProps) {
         const timer = setTimeout(() => updateNodeData(id, { text, label }), 500);
         return () => clearTimeout(timer);
     }, [text, label, id, updateNodeData]);
-
-    // Save size to node data
-    useEffect(() => {
-        const timer = setTimeout(() => updateNodeData(id, { width: size.width, height: size.height }), 100);
-        return () => clearTimeout(timer);
-    }, [size, id, updateNodeData]);
 
     const handleEnhance = async () => {
         if (!text.trim()) return;
@@ -75,45 +61,25 @@ function TextNode({ id, data, selected }: NodeProps) {
         setTimeout(() => setCopied(false), 2000);
     };
 
-    // Resize functionality
-    const handleResizeStart = useCallback((e: React.MouseEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setIsResizing(true);
-        resizeRef.current = {
-            startX: e.clientX,
-            startY: e.clientY,
-            startWidth: size.width,
-            startHeight: size.height,
-        };
-
-        const handleMouseMove = (moveEvent: MouseEvent) => {
-            const deltaX = moveEvent.clientX - resizeRef.current.startX;
-            const deltaY = moveEvent.clientY - resizeRef.current.startY;
-            const newWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, resizeRef.current.startWidth + deltaX));
-            const newHeight = Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, resizeRef.current.startHeight + deltaY));
-            setSize({ width: newWidth, height: newHeight });
-        };
-
-        const handleMouseUp = () => {
-            setIsResizing(false);
-            document.removeEventListener('mousemove', handleMouseMove);
-            document.removeEventListener('mouseup', handleMouseUp);
-        };
-
-        document.addEventListener('mousemove', handleMouseMove);
-        document.addEventListener('mouseup', handleMouseUp);
-    }, [size]);
-
     return (
-        <div className="group relative" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
+        <div className="w-full h-full group relative" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
+            {/* Node Resizer - React Flow's built-in resize component */}
+            <NodeResizer
+                minWidth={MIN_WIDTH}
+                minHeight={MIN_HEIGHT}
+                maxWidth={MAX_WIDTH}
+                maxHeight={MAX_HEIGHT}
+                isVisible={selected || isHovered}
+                lineClassName="!border-zinc-500"
+                handleClassName="!w-2 !h-2 !bg-zinc-400 !border-zinc-600"
+            />
+
             {/* Node Body */}
             <div
-                className={`relative overflow-hidden flex flex-col bg-[#0A0A0A] border transition-all duration-300 rounded-[16px] ${selected ? 'border-zinc-500/50 ring-1 ring-zinc-700/50' : 'border-white/5 hover:border-white/10'}`}
-                style={{ width: size.width, minHeight: size.height }}
+                className={`w-full h-full min-w-[180px] min-h-[80px] overflow-hidden flex flex-col bg-[#0A0A0A] border transition-all duration-300 rounded-[16px] ${selected ? 'border-zinc-500/50 ring-1 ring-zinc-700/50' : 'border-white/5 hover:border-white/10'}`}
             >
                 {/* Header */}
-                <div className="flex items-center justify-between px-3 py-2 border-b border-white/5 bg-white/[0.02]">
+                <div className="flex items-center justify-between px-3 py-2 border-b border-white/5 bg-white/[0.02] shrink-0">
                     <div className="flex items-center gap-2 flex-1">
                         <AlignLeft className="w-3 h-3 text-zinc-500" />
                         <input value={label} onChange={(e) => setLabel(e.target.value)} className="bg-transparent text-[10px] font-semibold text-zinc-400 tracking-wide uppercase focus:outline-none focus:text-white w-full" placeholder="LABEL" />
@@ -121,27 +87,18 @@ function TextNode({ id, data, selected }: NodeProps) {
                     <span className="text-[9px] font-mono text-zinc-600 bg-white/5 px-1.5 py-0.5 rounded ml-2">{(nodeData.model || 'GPT-4o').toUpperCase()}</span>
                 </div>
                 {/* Content */}
-                <div className="flex-1 p-3">
+                <div className="flex-1 p-3 overflow-hidden">
                     <textarea
                         value={text}
                         onChange={(e) => setText(e.target.value)}
                         placeholder="Write your prompt..."
                         className="w-full h-full bg-transparent text-[12px] leading-relaxed text-zinc-300 placeholder:text-zinc-700 resize-none focus:outline-none"
-                        style={{ minHeight: size.height - 60 }}
                         spellCheck={false}
                     />
                 </div>
                 {/* Character count */}
-                <div className="px-3 pb-2 flex items-center justify-between">
+                <div className="px-3 pb-2 shrink-0">
                     <span className="text-[9px] text-zinc-600">{text.length} chars</span>
-                </div>
-
-                {/* Resize Handle - Bottom Right Corner */}
-                <div
-                    className={`absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize flex items-end justify-end transition-opacity ${isResizing || isHovered || selected ? 'opacity-100' : 'opacity-0'}`}
-                    onMouseDown={handleResizeStart}
-                >
-                    <div className="w-2 h-2 border-r-2 border-b-2 border-white/30 hover:border-white/50 transition-colors rounded-br" />
                 </div>
             </div>
 

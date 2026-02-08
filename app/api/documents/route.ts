@@ -13,13 +13,14 @@ export async function GET(request: NextRequest) {
         }
 
         const { searchParams } = new URL(request.url);
+        const all = searchParams.get('all');
         const folderId = searchParams.get('folderId');
         const type = searchParams.get('type') as 'canvas' | 'note' | null;
 
         const documents = await db.query.documents.findMany({
             where: and(
                 eq(schema.documents.userId, userId),
-                folderId ? eq(schema.documents.folderId, folderId) : isNull(schema.documents.folderId),
+                all === 'true' ? undefined : (folderId ? eq(schema.documents.folderId, folderId) : isNull(schema.documents.folderId)),
                 type ? eq(schema.documents.type, type) : undefined
             ),
             with: {

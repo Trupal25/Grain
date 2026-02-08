@@ -1,7 +1,7 @@
 'use client';
 
-import { memo, useState, useEffect, useRef, useCallback } from 'react';
-import { Handle, Position, NodeProps, NodeToolbar, useReactFlow } from '@xyflow/react';
+import { memo, useState, useEffect, useRef, useMemo } from 'react';
+import { Handle, Position, NodeProps, NodeToolbar, useReactFlow, NodeResizer } from '@xyflow/react';
 import { ImageNodeData, IMAGE_MODELS, ASPECT_RATIOS } from '../../types';
 import { useConnectedPrompt, generateImageAPI } from '@/lib/hooks';
 import {
@@ -25,25 +25,57 @@ import {
     Upload
 } from 'lucide-react';
 
-const MIN_SIZE = 120;
+const MIN_SIZE = 100;
 const MAX_SIZE = 600;
-const DEFAULT_SIZE = 200;
 
-function ImageNode({ id, data, selected }: NodeProps) {
+function ImageNode({ id, data, selected, width, height }: NodeProps) {
     const nodeData = data as unknown as ImageNodeData;
-    const { updateNodeData, deleteElements } = useReactFlow();
+    const { updateNodeData, deleteElements, setNodes } = useReactFlow();
     const { getPrompt } = useConnectedPrompt(id);
+
+    // Track previous ratio to detect changes
+    const prevRatioRef = useRef<string>(nodeData.aspectRatio || '1:1');
+    const [aspectRatio, setAspectRatio] = useState(nodeData.aspectRatio || '1:1');
+
+    // Parse current ratio value
+    const currentRatioValue = useMemo(() => {
+        const [w, h] = aspectRatio.split(':').map(Number);
+        return w / h;
+    }, [aspectRatio]);
+
+    // Enforce aspect ratio when valid width is present and ratio changes
+    useEffect(() => {
+        if (width && aspectRatio !== prevRatioRef.current) {
+            const newHeight = width / currentRatioValue;
+            setNodes((nodes) => nodes.map(n => {
+                if (n.id === id) {
+                    return {
+                        ...n,
+                        style: { ...n.style, width: width, height: newHeight },
+                        width: width,
+                        height: newHeight
+                    };
+                }
+                return n;
+            }));
+            prevRatioRef.current = aspectRatio;
+        }
+    }, [aspectRatio, width, currentRatioValue, id, setNodes]);
+
+    // Validate and sync state with data
+    useEffect(() => {
+        if (nodeData.aspectRatio && nodeData.aspectRatio !== aspectRatio) {
+            setAspectRatio(nodeData.aspectRatio);
+        }
+    }, [nodeData.aspectRatio, aspectRatio]);
 
     const [isHovered, setIsHovered] = useState(false);
     const [label, setLabel] = useState(nodeData.label || 'Image');
     const [error, setError] = useState<string | null>(null);
-    const [size, setSize] = useState<number>((nodeData.size as number) || DEFAULT_SIZE);
-    const [isResizing, setIsResizing] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
 
     const hoverTimer = useRef<NodeJS.Timeout | undefined>(undefined);
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const resizeRef = useRef({ startY: 0, startSize: 0 });
 
     const handleMouseEnter = () => {
         if (hoverTimer.current) clearTimeout(hoverTimer.current);
@@ -58,12 +90,6 @@ function ImageNode({ id, data, selected }: NodeProps) {
         const timer = setTimeout(() => updateNodeData(id, { label }), 500);
         return () => clearTimeout(timer);
     }, [label, id, updateNodeData]);
-
-    // Save size to node data when it changes
-    useEffect(() => {
-        const timer = setTimeout(() => updateNodeData(id, { size }), 100);
-        return () => clearTimeout(timer);
-    }, [size, id, updateNodeData]);
 
     const handleGenerate = async () => {
         const prompt = nodeData.prompt || getPrompt();
@@ -139,31 +165,8 @@ function ImageNode({ id, data, selected }: NodeProps) {
         }
     };
 
-    // Resize functionality
-    const handleResizeStart = useCallback((e: React.MouseEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setIsResizing(true);
-        resizeRef.current = { startY: e.clientY, startSize: size };
-
-        const handleMouseMove = (moveEvent: MouseEvent) => {
-            const deltaY = moveEvent.clientY - resizeRef.current.startY;
-            const newSize = Math.min(MAX_SIZE, Math.max(MIN_SIZE, resizeRef.current.startSize + deltaY));
-            setSize(newSize);
-        };
-
-        const handleMouseUp = () => {
-            setIsResizing(false);
-            document.removeEventListener('mousemove', handleMouseMove);
-            document.removeEventListener('mouseup', handleMouseUp);
-        };
-
-        document.addEventListener('mousemove', handleMouseMove);
-        document.addEventListener('mouseup', handleMouseUp);
-    }, [size]);
-
     return (
-        <div className="group relative" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
+        <div className="w-full h-full group relative" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
             {/* Hidden file input */}
             <input
                 ref={fileInputRef}
@@ -171,6 +174,18 @@ function ImageNode({ id, data, selected }: NodeProps) {
                 accept="image/*"
                 onChange={handleFileChange}
                 className="hidden"
+            />
+
+            {/* Node Resizer - React Flow's built-in resize component */}
+            <NodeResizer
+                minWidth={MIN_SIZE}
+                minHeight={MIN_SIZE}
+                maxWidth={MAX_SIZE}
+                maxHeight={MAX_SIZE}
+                isVisible={selected || isHovered}
+                keepAspectRatio={true}
+                lineClassName="!border-zinc-500"
+                handleClassName="!w-2 !h-2 !bg-zinc-400 !border-zinc-600"
             />
 
             {/* Top Label */}
@@ -186,10 +201,9 @@ function ImageNode({ id, data, selected }: NodeProps) {
                 </span>
             </div>
 
-            {/* Main Node Body */}
+            {/* Main Node Body - uses 100% to fill the resizable container */}
             <div
-                className={`relative overflow-hidden bg-[#0A0A0A] border transition-all duration-300 rounded-[20px] ${selected ? 'border-zinc-500/50 ring-1 ring-zinc-700/50' : 'border-white/5 hover:border-white/10'}`}
-                style={{ width: size, height: size }}
+                className={`w-full h-full min-w-[100px] min-h-[100px] overflow-hidden bg-[#0A0A0A] border transition-all duration-300 rounded-[20px] ${selected ? 'border-zinc-500/50 ring-1 ring-zinc-700/50' : 'border-white/5 hover:border-white/10'}`}
             >
                 {nodeData.imageUrl ? (
                     <div className="w-full h-full relative group/image">
@@ -235,14 +249,6 @@ function ImageNode({ id, data, selected }: NodeProps) {
                         )}
                     </div>
                 )}
-
-                {/* Resize Handle */}
-                <div
-                    className={`absolute bottom-0 left-0 right-0 h-3 cursor-ns-resize flex items-center justify-center transition-opacity ${isResizing || isHovered || selected ? 'opacity-100' : 'opacity-0'}`}
-                    onMouseDown={handleResizeStart}
-                >
-                    <div className="w-8 h-1 rounded-full bg-white/30 hover:bg-white/50 transition-colors" />
-                </div>
             </div>
 
             {/* Toolbar */}

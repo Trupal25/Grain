@@ -15,6 +15,7 @@ import {
     Star,
     Trash2,
     Share2,
+    PanelLeft,
 } from 'lucide-react';
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
@@ -26,6 +27,10 @@ interface Doc {
     type: 'canvas' | 'note';
     isStarred?: boolean;
 }
+
+import { Sidebar } from '@/components/Sidebar';
+import { WorkspaceSidebar } from '@/components/WorkspaceSidebar';
+import { Folder as FolderType, Document as DocumentType, Project as ProjectType } from '@/lib/db/schema';
 
 export default function DocumentPage() {
     const params = useParams();
@@ -41,6 +46,72 @@ export default function DocumentPage() {
     const [initialContent, setInitialContent] = useState<PartialBlock[] | undefined>(undefined);
     const [showDropdown, setShowDropdown] = useState(false);
     const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Sidebar State
+    const [allFolders, setAllFolders] = useState<FolderType[]>([]);
+    const [allDocuments, setAllDocuments] = useState<DocumentType[]>([]);
+    const [allProjects, setAllProjects] = useState<ProjectType[]>([]);
+    const [credits, setCredits] = useState(0);
+    const [isTreeCollapsed, setIsTreeCollapsed] = useState(false);
+    const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+
+    // Fetch Sidebar data
+    const fetchTree = useCallback(async () => {
+        try {
+            const [foldersRes, docsRes, projectsRes] = await Promise.all([
+                fetch('/api/folders?all=true'),
+                fetch('/api/documents?all=true'),
+                fetch('/api/projects')
+            ]);
+
+            if (foldersRes.ok) {
+                const data = await foldersRes.json();
+                setAllFolders(data.folders || []);
+            }
+
+            if (docsRes.ok) {
+                const data = await docsRes.json();
+                setAllDocuments(data.documents || []);
+            }
+
+            if (projectsRes.ok) {
+                const data = await projectsRes.json();
+                setAllProjects(data.projects || []);
+            }
+        } catch (error) {
+            console.error('Failed to fetch tree:', error);
+        }
+    }, []);
+
+    const fetchCredits = useCallback(async () => {
+        try {
+            const res = await fetch('/api/credits');
+            if (res.ok) {
+                const data = await res.json();
+                setCredits(data.credits || 0);
+            }
+        } catch (error) {
+            console.error('Failed to fetch credits:', error);
+        }
+    }, []);
+
+    const toggleFolderExpand = (e: React.MouseEvent, folderId: string) => {
+        e.stopPropagation();
+        const newExpanded = new Set(expandedFolders);
+        if (newExpanded.has(folderId)) {
+            newExpanded.delete(folderId);
+        } else {
+            newExpanded.add(folderId);
+        }
+        setExpandedFolders(newExpanded);
+    };
+
+    useEffect(() => {
+        if (isLoaded && documentId) {
+            fetchTree();
+            fetchCredits();
+        }
+    }, [isLoaded, documentId, fetchTree, fetchCredits]);
 
     // Load document
     useEffect(() => {
@@ -191,125 +262,157 @@ export default function DocumentPage() {
     }
 
     return (
-        <div className="min-h-screen bg-zinc-950 text-white">
-            {/* Header */}
-            <header className="sticky top-0 z-50 bg-zinc-950/80 backdrop-blur-xl border-b border-zinc-800">
-                <div className="flex items-center justify-between px-4 py-3">
-                    <div className="flex items-center gap-4">
-                        <button
-                            onClick={() => router.push('/dashboard')}
-                            className="p-2 hover:bg-zinc-800 rounded-lg transition-colors"
-                        >
-                            <ArrowLeft className="w-5 h-5" />
-                        </button>
-
-                        <input
-                            type="text"
-                            value={docName}
-                            onChange={(e) => updateName(e.target.value)}
-                            className="bg-transparent text-lg font-semibold focus:outline-none border-b border-transparent hover:border-zinc-600 focus:border-purple-500 px-1 py-1 transition-colors max-w-[300px]"
-                        />
-
-                        {/* Save Status */}
-                        <div className="flex items-center gap-1 text-sm">
-                            {saveStatus === 'saving' && (
-                                <>
-                                    <Cloud className="w-4 h-4 text-yellow-500 animate-pulse" />
-                                    <span className="text-yellow-500">Saving...</span>
-                                </>
-                            )}
-                            {saveStatus === 'saved' && (
-                                <>
-                                    <Check className="w-4 h-4 text-green-500" />
-                                    <span className="text-green-500">Saved</span>
-                                </>
-                            )}
-                            {saveStatus === 'error' && (
-                                <>
-                                    <CloudOff className="w-4 h-4 text-red-500" />
-                                    <span className="text-red-500">Error</span>
-                                </>
-                            )}
-                        </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                        {/* AI Button */}
-                        <button
-                            onClick={aiExpand}
-                            disabled={isGenerating}
-                            className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 rounded-lg transition-all disabled:opacity-50"
-                        >
-                            {isGenerating ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                                <Sparkles className="w-4 h-4" />
-                            )}
-                            AI Assist
-                        </button>
-
-                        {/* More Options */}
-                        <div className="relative">
+        <div className="flex h-screen bg-zinc-950 text-white overflow-hidden">
+            <Sidebar
+                onToggleTree={() => setIsTreeCollapsed(!isTreeCollapsed)}
+                isTreeVisible={!isTreeCollapsed}
+            />
+            <WorkspaceSidebar
+                isCollapsed={isTreeCollapsed}
+                onToggleCollapse={() => setIsTreeCollapsed(!isTreeCollapsed)}
+                allFolders={allFolders}
+                allDocuments={allDocuments}
+                allProjects={allProjects}
+                credits={credits}
+                currentFolderId={null} // TODO: Could pass parentFolderId if available
+                onSelectFolder={(folder) => router.push(`/dashboard?folderId=${folder.id}`)}
+                onSelectDocument={(doc) => router.push(`/document/${doc.id}`)}
+                onSelectProject={(proj) => router.push(`/canvas?project=${proj.id}`)}
+                onNavigateHome={() => router.push('/dashboard')}
+                onNavigateFavorites={() => router.push('/dashboard?view=favorites')}
+                onNavigateTrash={() => router.push('/dashboard?view=trash')}
+                expandedFolders={expandedFolders}
+                toggleFolderExpand={toggleFolderExpand}
+            />
+            <div className="flex-1 flex flex-col w-full h-full overflow-hidden">
+                {/* Header */}
+                <header className="h-14 bg-zinc-950/80 backdrop-blur-xl border-b border-zinc-800 shrink-0 flex items-center justify-between px-4 z-50">
+                    <div className="flex items-center justify-between px-4 py-3">
+                        <div className="flex items-center gap-2">
                             <button
-                                onClick={() => setShowDropdown(!showDropdown)}
+                                onClick={() => setIsTreeCollapsed(!isTreeCollapsed)}
+                                className={`p-2 rounded-lg transition-colors ${!isTreeCollapsed ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}
+                            >
+                                <PanelLeft className="w-4 h-4" />
+                            </button>
+                            <div className="h-4 w-px bg-zinc-800 mx-1" />
+                            <button
+                                onClick={() => router.push('/dashboard')}
                                 className="p-2 hover:bg-zinc-800 rounded-lg transition-colors"
                             >
-                                <MoreHorizontal className="w-5 h-5" />
+                                <ArrowLeft className="w-5 h-5" />
                             </button>
 
-                            {showDropdown && (
-                                <>
-                                    <div
-                                        className="fixed inset-0 z-40"
-                                        onClick={() => setShowDropdown(false)}
-                                    />
-                                    <div className="absolute right-0 top-full mt-1 w-48 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl z-50 py-1">
-                                        <button
-                                            onClick={toggleStar}
-                                            className="w-full flex items-center gap-3 px-3 py-2 hover:bg-zinc-800 transition-colors text-left"
-                                        >
-                                            <Star
-                                                className={`w-4 h-4 ${doc?.isStarred ? 'fill-yellow-500 text-yellow-500' : ''}`}
-                                            />
-                                            {doc?.isStarred ? 'Remove from favorites' : 'Add to favorites'}
-                                        </button>
-                                        <button
-                                            onClick={() => {
-                                                // Share functionality
-                                                setShowDropdown(false);
-                                            }}
-                                            className="w-full flex items-center gap-3 px-3 py-2 hover:bg-zinc-800 transition-colors text-left"
-                                        >
-                                            <Share2 className="w-4 h-4" />
-                                            Share
-                                        </button>
-                                        <div className="border-t border-zinc-700 my-1" />
-                                        <button
-                                            onClick={deleteDocument}
-                                            className="w-full flex items-center gap-3 px-3 py-2 hover:bg-red-900/30 transition-colors text-left text-red-400"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                            Move to trash
-                                        </button>
-                                    </div>
-                                </>
-                            )}
+                            <input
+                                type="text"
+                                value={docName}
+                                onChange={(e) => updateName(e.target.value)}
+                                className="bg-transparent text-lg font-semibold focus:outline-none border-b border-transparent hover:border-zinc-600 focus:border-purple-500 px-1 py-1 transition-colors max-w-[300px]"
+                            />
+
+                            {/* Save Status */}
+                            <div className="flex items-center gap-1 text-sm">
+                                {saveStatus === 'saving' && (
+                                    <>
+                                        <Cloud className="w-4 h-4 text-yellow-500 animate-pulse" />
+                                        <span className="text-yellow-500">Saving...</span>
+                                    </>
+                                )}
+                                {saveStatus === 'saved' && (
+                                    <>
+                                        <Check className="w-4 h-4 text-green-500" />
+                                        <span className="text-green-500">Saved</span>
+                                    </>
+                                )}
+                                {saveStatus === 'error' && (
+                                    <>
+                                        <CloudOff className="w-4 h-4 text-red-500" />
+                                        <span className="text-red-500">Error</span>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            {/* AI Button */}
+                            <button
+                                onClick={aiExpand}
+                                disabled={isGenerating}
+                                className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 rounded-lg transition-all disabled:opacity-50"
+                            >
+                                {isGenerating ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                    <Sparkles className="w-4 h-4" />
+                                )}
+                                AI Assist
+                            </button>
+
+                            {/* More Options */}
+                            <div className="relative">
+                                <button
+                                    onClick={() => setShowDropdown(!showDropdown)}
+                                    className="p-2 hover:bg-zinc-800 rounded-lg transition-colors"
+                                >
+                                    <MoreHorizontal className="w-5 h-5" />
+                                </button>
+
+                                {showDropdown && (
+                                    <>
+                                        <div
+                                            className="fixed inset-0 z-40"
+                                            onClick={() => setShowDropdown(false)}
+                                        />
+                                        <div className="absolute right-0 top-full mt-1 w-48 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl z-50 py-1">
+                                            <button
+                                                onClick={toggleStar}
+                                                className="w-full flex items-center gap-3 px-3 py-2 hover:bg-zinc-800 transition-colors text-left"
+                                            >
+                                                <Star
+                                                    className={`w-4 h-4 ${doc?.isStarred ? 'fill-yellow-500 text-yellow-500' : ''}`}
+                                                />
+                                                {doc?.isStarred ? 'Remove from favorites' : 'Add to favorites'}
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    // Share functionality
+                                                    setShowDropdown(false);
+                                                }}
+                                                className="w-full flex items-center gap-3 px-3 py-2 hover:bg-zinc-800 transition-colors text-left"
+                                            >
+                                                <Share2 className="w-4 h-4" />
+                                                Share
+                                            </button>
+                                            <div className="border-t border-zinc-700 my-1" />
+                                            <button
+                                                onClick={deleteDocument}
+                                                className="w-full flex items-center gap-3 px-3 py-2 hover:bg-red-900/30 transition-colors text-left text-red-400"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                                Move to trash
+                                            </button>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
                         </div>
                     </div>
+                </header>
+
+                {/* Scrollable Content */}
+                <div className="flex-1 overflow-y-auto">
+                    {/* Editor */}
+                    <main className="max-w-4xl mx-auto py-8 px-4 min-h-full">
+                        <BlockNoteEditor
+                            initialContent={initialContent}
+                            onChange={saveContent}
+                            editable={true}
+                        />
+                    </main>
                 </div>
-            </header>
 
-            {/* Editor */}
-            <main className="max-w-4xl mx-auto py-8 px-4">
-                <BlockNoteEditor
-                    initialContent={initialContent}
-                    onChange={saveContent}
-                    editable={true}
-                />
-            </main>
-
-            {/* BlockNote custom styles */}
-            <style jsx global>{`
+                {/* BlockNote custom styles */}
+                <style jsx global>{`
                 .blocknote-wrapper {
                     min-height: calc(100vh - 200px);
                 }
@@ -431,6 +534,7 @@ export default function DocumentPage() {
                     opacity: 1 !important;
                 }
             `}</style>
+            </div>
         </div>
     );
 }

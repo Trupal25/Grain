@@ -28,9 +28,9 @@ interface SidebarProps {
 
 function Sidebar({ onAddNode }: SidebarProps) {
     return (
-        <div className="absolute left-6 top-1/2 -translate-y-1/2 z-50 flex flex-col gap-4">
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-row gap-4 pointer-events-auto">
             {/* Main Floating Dock */}
-            <div className="flex flex-col items-center gap-3 p-2 bg-zinc-900/90 backdrop-blur-xl border border-white/10 rounded-full shadow-2xl ring-1 ring-white/5">
+            <div className="flex flex-row items-center gap-3 p-2 bg-zinc-900/90 backdrop-blur-xl border border-white/10 rounded-full shadow-2xl ring-1 ring-white/5">
 
                 <div className="p-1">
                     <DropdownMenu>
@@ -42,7 +42,7 @@ function Sidebar({ onAddNode }: SidebarProps) {
                                 <Plus className="w-5 h-5" />
                             </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent side="right" align="start" className="w-48 bg-[#1A1A1A] border-zinc-800 text-zinc-300 ml-4 p-1 rounded-xl shadow-2xl">
+                        <DropdownMenuContent side="top" align="center" className="w-48 bg-[#1A1A1A] border-zinc-800 text-zinc-300 mb-2 p-1 rounded-xl shadow-2xl">
                             <DropdownMenuLabel className="text-xs font-normal text-zinc-500 px-2 py-1.5">Add to Canvas</DropdownMenuLabel>
                             <DropdownMenuItem onClick={() => onAddNode('image')} className="text-sm focus:bg-white/10 focus:text-white rounded-lg cursor-pointer py-2">
                                 <ImageIcon className="w-4 h-4 mr-2 text-purple-400" />
@@ -60,7 +60,7 @@ function Sidebar({ onAddNode }: SidebarProps) {
                     </DropdownMenu>
                 </div>
 
-                <div className="w-8 h-px bg-white/10 my-1" />
+                <div className="w-px h-8 bg-white/10 mx-1" />
 
                 <Button
                     variant="ghost"
@@ -109,11 +109,11 @@ function Sidebar({ onAddNode }: SidebarProps) {
             </div>
 
             {/* User Avatar */}
-            <div className="flex items-center justify-center">
+            {/* <div className="flex items-center justify-center">
                 <button className="w-10 h-10 rounded-full bg-indigo-600 text-white flex items-center justify-center font-medium shadow-lg hover:ring-2 hover:ring-indigo-400 transition-all">
                     T
                 </button>
-            </div>
+            </div> */}
         </div>
     );
 }

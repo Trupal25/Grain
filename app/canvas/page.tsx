@@ -24,10 +24,13 @@ import {
 import ImageNode from './components/nodes/ImageNode';
 import VideoNode from './components/nodes/VideoNode';
 import TextNode from './components/nodes/TextNode';
-import Sidebar from './components/Sidebar';
+import ToolsSidebar from './components/Sidebar';
+import { Sidebar as AppSidebar } from '@/components/Sidebar';
+import { WorkspaceSidebar } from '@/components/WorkspaceSidebar';
 import { ImageIcon, Video, AlignLeft, Loader2, Cloud, CloudOff, Check } from 'lucide-react';
 import type { ImageNodeData, VideoNodeData, TextNodeData } from './types';
 import { useAutoSave, loadProject, createProject } from '@/lib/project';
+import { Folder as FolderType, Document as DocumentType, Project as ProjectType } from '@/lib/db/schema';
 
 const nodeTypes: NodeTypes = { image: ImageNode, video: VideoNode, text: TextNode };
 
@@ -58,6 +61,57 @@ function GrainCanvas() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const projectId = searchParams.get('project');
+
+  // Sidebar State
+  const [allFolders, setAllFolders] = useState<FolderType[]>([]);
+  const [allDocuments, setAllDocuments] = useState<DocumentType[]>([]);
+  const [allProjects, setAllProjects] = useState<ProjectType[]>([]);
+  const [credits, setCredits] = useState(0);
+  const [isTreeCollapsed, setIsTreeCollapsed] = useState(false);
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+
+  const toggleFolderExpand = (e: React.MouseEvent, folderId: string) => {
+    e.stopPropagation();
+    const newExpanded = new Set(expandedFolders);
+    if (newExpanded.has(folderId)) {
+      newExpanded.delete(folderId);
+    } else {
+      newExpanded.add(folderId);
+    }
+    setExpandedFolders(newExpanded);
+  };
+
+  const fetchTree = useCallback(async () => {
+    try {
+      const [foldersRes, docsRes, projectsRes] = await Promise.all([
+        fetch('/api/folders?all=true'),
+        fetch('/api/documents?all=true'),
+        fetch('/api/projects')
+      ]);
+
+      if (foldersRes.ok) {
+        const data = await foldersRes.json();
+        setAllFolders(data.folders || []);
+      }
+      if (docsRes.ok) {
+        const data = await docsRes.json();
+        setAllDocuments(data.documents || []);
+      }
+      if (projectsRes.ok) {
+        const data = await projectsRes.json();
+        setAllProjects(data.projects || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch tree:', error);
+    }
+  }, []);
+
+  // Fetch tree on mount
+  useEffect(() => {
+    if (isUserLoaded && user) {
+      fetchTree();
+    }
+  }, [isUserLoaded, user, fetchTree]);
 
   // Auto-save hook with status callbacks
   const { scheduleSave } = useAutoSave({
@@ -161,90 +215,117 @@ function GrainCanvas() {
 
   return (
     <div className="w-screen h-screen bg-black text-white overflow-hidden relative">
-      {/* Header */}
-      <div className="absolute top-6 left-24 z-50 pointer-events-none select-none">
-        <h1 className="text-sm font-bold tracking-tight text-white flex items-center gap-2">
-          <div className="w-4 h-4 rounded-md bg-white text-black flex items-center justify-center text-[10px] font-black">G</div>
-          Grain
-        </h1>
-        <div className="flex items-center gap-2 mt-0.5 ml-6">
-          <p className="text-[10px] text-zinc-600 font-mono">{projectName}</p>
-          {/* Save Status Indicator */}
-          <div className="flex items-center gap-1 text-[10px]">
-            {saveStatus === 'saving' && (
-              <>
-                <Cloud className="w-3 h-3 text-yellow-500 animate-pulse" />
-                <span className="text-yellow-500">Saving...</span>
-              </>
-            )}
-            {saveStatus === 'saved' && (
-              <>
-                <Check className="w-3 h-3 text-green-500" />
-                <span className="text-green-500">Saved</span>
-              </>
-            )}
-            {saveStatus === 'error' && (
-              <>
-                <CloudOff className="w-3 h-3 text-red-500" />
-                <span className="text-red-500">Error</span>
-              </>
-            )}
+      <div className="flex w-full h-full">
+        <div className="flex h-full shrink-0 z-50">
+          <AppSidebar
+            onToggleTree={() => setIsTreeCollapsed(!isTreeCollapsed)}
+            isTreeVisible={!isTreeCollapsed}
+          />
+          <WorkspaceSidebar
+            isCollapsed={isTreeCollapsed}
+            onToggleCollapse={() => setIsTreeCollapsed(!isTreeCollapsed)}
+            allFolders={allFolders}
+            allDocuments={allDocuments}
+            allProjects={allProjects}
+            credits={credits}
+            currentFolderId={null}
+            onSelectFolder={(folder) => router.push(`/dashboard?folderId=${folder.id}`)}
+            onSelectDocument={(doc) => router.push(`/document/${doc.id}`)}
+            onSelectProject={(proj) => router.push(`/canvas?project=${proj.id}`)}
+            onNavigateHome={() => router.push('/dashboard')}
+            onNavigateFavorites={() => router.push('/dashboard?view=favorites')}
+            onNavigateTrash={() => router.push('/dashboard?view=trash')}
+            expandedFolders={expandedFolders}
+            toggleFolderExpand={toggleFolderExpand}
+          />
+        </div>
+        <div className="flex-1 relative h-full">
+          {/* Header */}
+          <div className="absolute top-6 left-24 z-50 pointer-events-none select-none">
+            <h1 className="text-sm font-bold tracking-tight text-white flex items-center gap-2">
+              <div className="w-4 h-4 rounded-md bg-white text-black flex items-center justify-center text-[10px] font-black">G</div>
+              Grain
+            </h1>
+            <div className="flex items-center gap-2 mt-0.5 ml-6">
+              <p className="text-[10px] text-zinc-600 font-mono">{projectName}</p>
+              {/* Save Status Indicator */}
+              <div className="flex items-center gap-1 text-[10px]">
+                {saveStatus === 'saving' && (
+                  <>
+                    <Cloud className="w-3 h-3 text-yellow-500 animate-pulse" />
+                    <span className="text-yellow-500">Saving...</span>
+                  </>
+                )}
+                {saveStatus === 'saved' && (
+                  <>
+                    <Check className="w-3 h-3 text-green-500" />
+                    <span className="text-green-500">Saved</span>
+                  </>
+                )}
+                {saveStatus === 'error' && (
+                  <>
+                    <CloudOff className="w-3 h-3 text-red-500" />
+                    <span className="text-red-500">Error</span>
+                  </>
+                )}
+              </div>
+            </div>
           </div>
+
+          <ToolsSidebar onAddNode={addNode} />
+
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            nodeTypes={nodeTypes}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onConnect={onConnect}
+            onConnectEnd={onConnectEnd}
+            isValidConnection={isValidConnection}
+            onPaneClick={() => setMenu(null)}
+            fitView
+            minZoom={0.3}
+            maxZoom={2}
+            defaultViewport={{ x: 0, y: 0, zoom: 0.85 }}
+            proOptions={{ hideAttribution: true }}
+            selectionMode={SelectionMode.Partial}
+            panOnScroll
+          >
+            <Background color="#333" gap={24} size={1} variant={BackgroundVariant.Dots} />
+          </ReactFlow>
+
+          {/* Connection Menu */}
+          {mounted && menu && createPortal(
+            <div
+              style={{ position: 'fixed', left: menu.x, top: menu.y, transform: 'translate(-50%, 8px)', zIndex: 99999 }}
+              className="p-2 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl min-w-[180px]"
+            >
+              <p className="text-[10px] text-zinc-500 uppercase font-semibold tracking-wider px-2 py-1 mb-1">Add Node</p>
+              {(['text', 'image', 'video'] as const).map(type => (
+                <button
+                  key={type}
+                  onClick={() => createNode(type)}
+                  className="w-full flex items-center gap-3 px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-800 rounded-lg"
+                >
+                  {type === 'text' && <AlignLeft className="w-4 h-4 text-green-400" />}
+                  {type === 'image' && <ImageIcon className="w-4 h-4 text-purple-400" />}
+                  {type === 'video' && <Video className="w-4 h-4 text-blue-400" />}
+                  {type === 'text' ? 'Text Prompt' : type === 'image' ? 'Image Gen' : 'Video Scene'}
+                </button>
+              ))}
+            </div>,
+            document.body
+          )}
+
+          {/* Empty State */}
+          {nodes.length === 0 && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <p className="text-xs text-zinc-700 uppercase tracking-widest">Click + to add a node</p>
+            </div>
+          )}
         </div>
       </div>
-
-      <Sidebar onAddNode={addNode} />
-
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        nodeTypes={nodeTypes}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onConnect={onConnect}
-        onConnectEnd={onConnectEnd}
-        isValidConnection={isValidConnection}
-        onPaneClick={() => setMenu(null)}
-        fitView
-        minZoom={0.3}
-        maxZoom={2}
-        defaultViewport={{ x: 0, y: 0, zoom: 0.85 }}
-        proOptions={{ hideAttribution: true }}
-        selectionMode={SelectionMode.Partial}
-        panOnScroll
-      >
-        <Background color="#333" gap={24} size={1} variant={BackgroundVariant.Dots} />
-      </ReactFlow>
-
-      {/* Connection Menu */}
-      {mounted && menu && createPortal(
-        <div
-          style={{ position: 'fixed', left: menu.x, top: menu.y, transform: 'translate(-50%, 8px)', zIndex: 99999 }}
-          className="p-2 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl min-w-[180px]"
-        >
-          <p className="text-[10px] text-zinc-500 uppercase font-semibold tracking-wider px-2 py-1 mb-1">Add Node</p>
-          {(['text', 'image', 'video'] as const).map(type => (
-            <button
-              key={type}
-              onClick={() => createNode(type)}
-              className="w-full flex items-center gap-3 px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-800 rounded-lg"
-            >
-              {type === 'text' && <AlignLeft className="w-4 h-4 text-green-400" />}
-              {type === 'image' && <ImageIcon className="w-4 h-4 text-purple-400" />}
-              {type === 'video' && <Video className="w-4 h-4 text-blue-400" />}
-              {type === 'text' ? 'Text Prompt' : type === 'image' ? 'Image Gen' : 'Video Scene'}
-            </button>
-          ))}
-        </div>,
-        document.body
-      )}
-
-      {/* Empty State */}
-      {nodes.length === 0 && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <p className="text-xs text-zinc-700 uppercase tracking-widest">Click + to add a node</p>
-        </div>
-      )}
     </div>
   );
 }
