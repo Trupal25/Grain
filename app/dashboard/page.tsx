@@ -637,7 +637,7 @@ export default function DashboardPage() {
                         <BreadcrumbList>
                             {breadcrumbs.map((item, index) => (
                                 <React.Fragment key={item.id || 'root'}>
-                                    {index > 0 && <BreadcrumbSeparator />}
+                                    {index > 0 && <BreadcrumbSeparator className="hidden md:block text-zinc-600" />}
                                     <BreadcrumbItem>
                                         {index === breadcrumbs.length - 1 ? (
                                             <BreadcrumbPage className="flex items-center gap-1.5 text-white">

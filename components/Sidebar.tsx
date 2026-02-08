@@ -123,7 +123,7 @@ export function Sidebar({ className, onToggleTree, isTreeVisible }: SidebarProps
     return (
         <div
             className={cn(
-                "flex flex-col bg-[#0A0A0A] border-r border-white/5 transition-all duration-300 ease-in-out sticky top-0 z-40 h-screen py-4 shrink-0",
+                "flex flex-col bg-[#0A0A0A] border-r border-zinc-800 transition-all duration-300 ease-in-out sticky top-0 z-40 h-screen py-4 shrink-0",
                 isCollapsed ? "w-[68px] px-3" : "w-60 px-4",
                 className
             )}
@@ -184,7 +184,7 @@ export function Sidebar({ className, onToggleTree, isTreeVisible }: SidebarProps
                     isCollapsed={isCollapsed}
                 />
 
-                <div className="h-px bg-white/5 my-3 mx-1" />
+                <div className="h-px bg-zinc-800 my-3 mx-1" />
 
                 <div className={cn("text-xs font-semibold text-zinc-600 mb-2 uppercase tracking-wider", isCollapsed ? "text-center" : "px-3")}>
                     {isCollapsed ? "—" : "Library"}
@@ -225,7 +225,7 @@ export function Sidebar({ className, onToggleTree, isTreeVisible }: SidebarProps
             </div>
 
             {/* Bottom Section */}
-            <div className="mt-auto pt-4 border-t border-white/5 flex flex-col gap-1">
+            <div className="mt-auto pt-4 border-t border-zinc-800 flex flex-col gap-1">
                 <NavItem
                     icon={Trash2}
                     label="Trash"

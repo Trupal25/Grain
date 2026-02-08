@@ -347,9 +347,7 @@ export default function DocumentPage() {
                                                     {idx > 0 && crumb.name}
                                                 </BreadcrumbLink>
                                             </BreadcrumbItem>
-                                            <BreadcrumbSeparator className="hidden md:block text-zinc-700">
-                                                <ChevronRight className="w-3.5 h-3.5" />
-                                            </BreadcrumbSeparator>
+                                            <BreadcrumbSeparator className="hidden md:block text-zinc-600" />
                                         </React.Fragment>
                                     ))}
                                     <BreadcrumbItem>
