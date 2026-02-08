@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, useState, useEffect, useRef } from 'react';
+import { memo, useState, useEffect, useRef, useMemo } from 'react';
 import { Handle, Position, NodeProps, NodeToolbar, useReactFlow, NodeResizer } from '@xyflow/react';
 import { ChatNodeData, TEXT_MODELS, ChatMessage, TextModel } from '../../types';
 import { useNodeInputs } from '@/lib/hooks';
@@ -73,8 +73,9 @@ function ChatNode({ id, data, selected }: NodeProps) {
         updateNodeData(id, { messages, model: nodeData.model || 'gemini-2.0-flash-lite' });
     }, [messages, id, updateNodeData, nodeData.model]);
 
+    const inputs = useMemo(() => getInputs(), [getInputs]);
+
     const handleSendMessage = async () => {
-        const inputs = getInputs();
         if (!input.trim() && !attachedFile && inputs.texts.length === 0 && inputs.images.length === 0) return;
         if (isProcessing) return;
 
@@ -311,9 +312,9 @@ function ChatNode({ id, data, selected }: NodeProps) {
                 <div className="p-4 bg-black/50 border-t border-white/5 backdrop-blur-sm nowheel nodrag">
                     {/* Connection Inputs Preview */}
                     <AnimatePresence>
-                        {getInputs().images.length > 0 && (
+                        {(inputs.images.length > 0 || inputs.texts.length > 0) && (
                             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex gap-2 overflow-x-auto pb-2 chat-scrollbar">
-                                {getInputs().images.map((img, idx) => (
+                                {inputs.images.map((img: string, idx: number) => (
                                     <div key={idx} className="relative group shrink-0 w-16 h-16 rounded-lg overflow-hidden border border-white/10 ring-2 ring-blue-500/20 shadow-lg">
                                         <img src={img} className="w-full h-full object-cover" />
                                         <div className="absolute inset-0 bg-blue-500/10" />
@@ -322,7 +323,7 @@ function ChatNode({ id, data, selected }: NodeProps) {
                                         </div>
                                     </div>
                                 ))}
-                                {getInputs().texts.length > 0 && (
+                                {inputs.texts.length > 0 && (
                                     <div className="px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full flex items-center gap-1.5">
                                         <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
                                         <span className="text-[10px] text-blue-400 font-bold uppercase tracking-widest">Connected Context</span>

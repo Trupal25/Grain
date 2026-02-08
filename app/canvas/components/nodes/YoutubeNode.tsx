@@ -1,28 +1,19 @@
 'use client';
 
-import { memo, useState, useRef, useEffect } from 'react';
+import { memo, useState, useRef, useEffect, useMemo } from 'react';
 import { Handle, Position, NodeProps, NodeToolbar, useReactFlow, NodeResizer } from '@xyflow/react';
 import { YoutubeNodeData } from '../../types';
 import { Button } from '@/components/ui/button';
 import { Youtube, Trash2, ExternalLink, Play } from 'lucide-react';
 
-const MIN_WIDTH = 320;
-const MAX_WIDTH = 800;
-const MIN_HEIGHT = 180;
-const MAX_HEIGHT = 450;
+import { getYoutubeId, MIN_WIDTH, MAX_WIDTH, MIN_HEIGHT, MAX_HEIGHT } from '@/lib/canvas-utils';
 
 function YoutubeNode({ id, data, selected }: NodeProps) {
     const nodeData = data as unknown as YoutubeNodeData;
     const { updateNodeData, deleteElements } = useReactFlow();
     const [isHovered, setIsHovered] = useState(false);
 
-    const getYoutubeId = (url: string) => {
-        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-        const match = url?.match(regExp);
-        return (match && match[2].length === 11) ? match[2] : null;
-    };
-
-    const videoId = getYoutubeId(nodeData.videoUrl || '');
+    const videoId = useMemo(() => getYoutubeId(nodeData.videoUrl || ''), [nodeData.videoUrl]);
 
     return (
         <div
@@ -31,16 +22,17 @@ function YoutubeNode({ id, data, selected }: NodeProps) {
             onMouseLeave={() => setIsHovered(false)}
         >
             <NodeResizer
-                minWidth={MIN_WIDTH}
-                minHeight={MIN_HEIGHT}
-                maxWidth={MAX_WIDTH}
-                maxHeight={MAX_HEIGHT}
+                maxWidth={MAX_WIDTH.youtube}
+                maxHeight={MAX_HEIGHT.youtube}
+                minWidth={MIN_WIDTH.youtube}
+                minHeight={MIN_HEIGHT.youtube}
                 isVisible={selected || isHovered}
                 lineClassName="!border-red-500"
                 handleClassName="!w-2 !h-2 !bg-red-500 !border-red-600"
             />
 
-            <div className="absolute top-0 left-0 right-0 h-10 cursor-grab active:cursor-grabbing z-30 rounded-t-2xl" />
+            {/* Grab Handle - Inset to not block resizer handles */}
+            <div className="absolute top-0 left-8 right-8 h-8 cursor-grab active:cursor-grabbing z-20 rounded-t-2xl" />
 
             <div className="absolute -top-7 left-1 flex items-center gap-2 px-1 py-1 z-20">
                 <Youtube className="w-3 h-3 text-red-500" />

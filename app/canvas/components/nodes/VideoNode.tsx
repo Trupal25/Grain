@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, useState, useRef, useEffect } from 'react';
+import { memo, useState, useRef, useEffect, useMemo } from 'react';
 import { Handle, Position, NodeProps, NodeToolbar, useReactFlow, NodeResizer } from '@xyflow/react';
 import { VideoNodeData, VIDEO_MODELS, DURATIONS } from '../../types';
 import { useNodeInputs, generateVideoAPI } from '@/lib/hooks';
@@ -15,15 +15,13 @@ import {
 import { Button } from '@/components/ui/button';
 import { Video, Play, Pause, Clapperboard, Wand2, Download, RefreshCw, Trash2, AlertCircle, Upload } from 'lucide-react';
 
-const MIN_WIDTH = 160;
-const MAX_WIDTH = 480;
-const MIN_HEIGHT = 90;
-const MAX_HEIGHT = 270;
+import { MIN_WIDTH, MAX_WIDTH, MIN_HEIGHT, MAX_HEIGHT } from '@/lib/canvas-utils';
 
 function VideoNode({ id, data, selected }: NodeProps) {
     const nodeData = data as unknown as VideoNodeData;
     const { updateNodeData, deleteElements } = useReactFlow();
     const { getInputs } = useNodeInputs(id);
+    const inputs = useMemo(() => getInputs(), [getInputs]);
 
     const [isPlaying, setIsPlaying] = useState(false);
     const videoRef = useRef<HTMLVideoElement>(null);
@@ -56,7 +54,6 @@ function VideoNode({ id, data, selected }: NodeProps) {
     };
 
     const handleGenerate = async () => {
-        const inputs = getInputs();
         const prompt = nodeData.prompt || inputs.combinedText;
 
         if (!prompt) {
@@ -149,17 +146,17 @@ function VideoNode({ id, data, selected }: NodeProps) {
 
             {/* Node Resizer - React Flow's built-in resize component */}
             <NodeResizer
-                minWidth={MIN_WIDTH}
-                minHeight={MIN_HEIGHT}
-                maxWidth={MAX_WIDTH}
-                maxHeight={MAX_HEIGHT}
+                maxWidth={MAX_WIDTH.video}
+                maxHeight={MAX_HEIGHT.video}
+                minWidth={MIN_WIDTH.video}
+                minHeight={MIN_HEIGHT.video}
                 isVisible={selected || isHovered}
                 lineClassName="!border-zinc-500"
                 handleClassName="!w-2 !h-2 !bg-zinc-400 !border-zinc-600"
             />
 
-            {/* Grab Handle for Dragging */}
-            <div className="absolute top-0 left-0 right-0 h-10 cursor-grab active:cursor-grabbing z-30 rounded-t-2xl" />
+            {/* Grab Handle for Dragging - Inset to not block resizer handles */}
+            <div className="absolute top-0 left-4 right-4 h-8 cursor-grab active:cursor-grabbing z-20 rounded-t-2xl" />
 
             {/* Top Label */}
             <div className="absolute -top-7 left-1 flex items-center gap-2 px-1 py-1 z-20">

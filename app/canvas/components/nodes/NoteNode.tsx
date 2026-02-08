@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { PartialBlock } from '@blocknote/core';
+import { MIN_WIDTH, MAX_WIDTH, MIN_HEIGHT, MAX_HEIGHT } from '@/lib/canvas-utils';
 
 function NoteNode({ id, data, selected }: NodeProps) {
     const nodeData = data as unknown as NoteNodeData;
@@ -51,8 +52,10 @@ function NoteNode({ id, data, selected }: NodeProps) {
     return (
         <div className="w-full h-full group relative">
             <NodeResizer
-                minWidth={300}
-                minHeight={200}
+                maxWidth={MAX_WIDTH.note}
+                maxHeight={MAX_HEIGHT.note}
+                minWidth={MIN_WIDTH.note}
+                minHeight={MIN_HEIGHT.note}
                 isVisible={selected}
                 lineClassName="!border-blue-500/30 opacity-50"
                 handleClassName="!w-3 !h-3 !bg-blue-500/50 !rounded-full !border-2 !border-zinc-900 shadow-lg"

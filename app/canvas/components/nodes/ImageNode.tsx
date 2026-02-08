@@ -28,10 +28,13 @@ import {
 const MIN_SIZE = 100;
 const MAX_SIZE = 600;
 
+import { MIN_WIDTH, MAX_WIDTH, MIN_HEIGHT, MAX_HEIGHT } from '@/lib/canvas-utils';
+
 function ImageNode({ id, data, selected, width, height }: NodeProps) {
     const nodeData = data as unknown as ImageNodeData;
     const { updateNodeData, deleteElements, setNodes } = useReactFlow();
     const { getInputs } = useNodeInputs(id);
+    const inputs = useMemo(() => getInputs(), [getInputs]);
 
     // Track previous ratio to detect changes
     const prevRatioRef = useRef<string>(nodeData.aspectRatio || '1:1');
@@ -92,7 +95,6 @@ function ImageNode({ id, data, selected, width, height }: NodeProps) {
     }, [label, id, updateNodeData]);
 
     const handleGenerate = async () => {
-        const inputs = getInputs();
         const prompt = nodeData.prompt || inputs.combinedText;
 
         if (!prompt) {
@@ -187,10 +189,10 @@ function ImageNode({ id, data, selected, width, height }: NodeProps) {
 
             {/* Node Resizer - React Flow's built-in resize component */}
             <NodeResizer
-                minWidth={MIN_SIZE}
-                minHeight={MIN_SIZE}
-                maxWidth={MAX_SIZE}
-                maxHeight={MAX_SIZE}
+                maxWidth={MAX_WIDTH.image}
+                maxHeight={MAX_HEIGHT.image}
+                minWidth={MIN_WIDTH.image}
+                minHeight={MIN_HEIGHT.image}
                 isVisible={selected || isHovered}
                 keepAspectRatio={true}
                 lineClassName="!border-zinc-500"
@@ -212,11 +214,11 @@ function ImageNode({ id, data, selected, width, height }: NodeProps) {
 
             {/* Main Node Body - uses 100% to fill the resizable container */}
             <div
-                className={`w-full h-full min-w-[100px] min-h-[100px] overflow-hidden bg-[#0A0A0A] border transition-all duration-300 rounded-[20px] ${selected ? 'border-zinc-500/50 ring-1 ring-zinc-700/50' : 'border-white/5 hover:border-white/10'}`}
+                className={`w-full h-full overflow-hidden bg-[#0A0A0A] border transition-all duration-300 rounded-[20px] ${selected ? 'border-zinc-500/50 ring-1 ring-zinc-700/50' : 'border-white/5 hover:border-white/10'}`}
             >
                 {nodeData.imageUrl ? (
                     <div className="w-full h-full relative group/image">
-                        <img src={nodeData.imageUrl} alt="Generated" className="w-full h-full object-cover" />
+                        <img src={nodeData.imageUrl} alt="Generated" className="w-full h-full object-cover nodrag" />
                         <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover/image:opacity-100 transition-opacity">
                             <Button size="icon" variant="secondary" className="h-6 w-6 rounded-full bg-black/50 backdrop-blur text-white hover:bg-black/70" onClick={handleDownload}>
                                 <Download className="w-3 h-3" />

@@ -9,10 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { AlignLeft, Trash2, Copy, Sparkles, RefreshCw, Check } from 'lucide-react';
 
-const MIN_WIDTH = 180;
-const MAX_WIDTH = 500;
-const MIN_HEIGHT = 80;
-const MAX_HEIGHT = 400;
+import { MIN_WIDTH, MAX_WIDTH, MIN_HEIGHT, MAX_HEIGHT } from '@/lib/canvas-utils';
 
 function TextNode({ id, data, selected }: NodeProps) {
     const nodeData = data as unknown as TextNodeData;
@@ -65,10 +62,10 @@ function TextNode({ id, data, selected }: NodeProps) {
         <div className="w-full h-full group relative" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
             {/* Node Resizer - React Flow's built-in resize component */}
             <NodeResizer
-                minWidth={MIN_WIDTH}
-                minHeight={MIN_HEIGHT}
-                maxWidth={MAX_WIDTH}
-                maxHeight={MAX_HEIGHT}
+                maxWidth={MAX_WIDTH.text}
+                maxHeight={MAX_HEIGHT.text}
+                minWidth={MIN_WIDTH.text}
+                minHeight={MIN_HEIGHT.text}
                 isVisible={selected || isHovered}
                 lineClassName="!border-zinc-500"
                 handleClassName="!w-2 !h-2 !bg-zinc-400 !border-zinc-600"

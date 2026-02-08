@@ -36,6 +36,7 @@ import { toast } from 'sonner';
 import type { ImageNodeData, VideoNodeData, TextNodeData, YoutubeNodeData } from './types';
 import { useAutoSave, loadProject, createProject } from '@/lib/project';
 import { Folder as FolderType, Document as DocumentType, Project as ProjectType } from '@/lib/db/schema';
+import { isValidConnection as checkValidConnection } from '@/lib/canvas-utils';
 
 const nodeTypes: NodeTypes = {
   image: ImageNode,
@@ -47,7 +48,7 @@ const nodeTypes: NodeTypes = {
 };
 
 let nodeId = 0;
-const getNodeId = (type: string) => `${type}-${++nodeId}`;
+const getNodeId = (type: string) => `${type}-${++nodeId}-${Math.random().toString(36).substr(2, 4)}`;
 
 const defaultData = {
   image: { label: 'Image', model: 'gemini-imagen', aspectRatio: '1:1' } as ImageNodeData,
@@ -341,26 +342,7 @@ function GrainCanvas() {
   }, [setEdges]);
 
   const isValidConnection = useCallback((conn: Edge | Connection) => {
-    if (conn.source === conn.target) return false;
-
-    const sourceNode = nodes.find(n => n.id === conn.source);
-    const targetNode = nodes.find(n => n.id === conn.target);
-
-    if (!sourceNode || !targetNode) return false;
-
-    // Rules:
-    // Text, Note, Chat can act as inputs to Image, Video, or another Chat
-    if (sourceNode.type === 'text' || sourceNode.type === 'note' || sourceNode.type === 'chat') {
-      return ['image', 'video', 'chat'].includes(targetNode.type as string);
-    }
-
-    // Media nodes (Image, Video, YouTube) can only connect to Chat for context
-    if (sourceNode.type === 'image' || sourceNode.type === 'video' || sourceNode.type === 'youtube') {
-      if (sourceNode.type === 'image' && targetNode.type === 'video') return true;
-      return targetNode.type === 'chat';
-    }
-
-    return false;
+    return checkValidConnection(conn, nodes);
   }, [nodes]);
 
   const onEdgeContextMenu = useCallback((event: React.MouseEvent, edge: Edge) => {
@@ -440,6 +422,15 @@ function GrainCanvas() {
     },
     [screenToFlowPosition, setNodes],
   );
+
+  const onDeleteSelected = useCallback(() => {
+    const selectedNodes = nodes.filter(n => n.selected);
+    const selectedEdges = edges.filter(e => e.selected);
+    deleteElements({ nodes: selectedNodes, edges: selectedEdges });
+    toast.success('Selected elements removed');
+  }, [nodes, edges, deleteElements]);
+
+  const hasSelection = nodes.some(n => n.selected) || edges.some(e => e.selected);
 
   // Loading state
   if (!isUserLoaded || isLoading) {
@@ -597,13 +588,8 @@ function GrainCanvas() {
         onAddNode={addNode}
         activeTool={activeTool}
         onToolChange={setActiveTool}
-        onDeleteSelected={() => {
-          const selectedNodes = nodes.filter(n => n.selected);
-          const selectedEdges = edges.filter(e => e.selected);
-          deleteElements({ nodes: selectedNodes, edges: selectedEdges });
-          toast.success('Selected elements removed');
-        }}
-        hasSelection={nodes.some(n => n.selected) || edges.some(e => e.selected)}
+        onDeleteSelected={onDeleteSelected}
+        hasSelection={hasSelection}
       />
     </div>
   );
