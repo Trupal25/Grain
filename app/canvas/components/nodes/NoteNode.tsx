@@ -12,6 +12,7 @@ const extractTextFromTiptap = (json: any): string => {
     if (!json) return '';
     try {
         const data = typeof json === 'string' ? JSON.parse(json) : json;
+        if (!data || Object.keys(data).length === 0) return '';
         if (data.type === 'doc' && Array.isArray(data.content)) {
             return data.content.map((block: any) => {
                 if (block.content && Array.isArray(block.content)) {
