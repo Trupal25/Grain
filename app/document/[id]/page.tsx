@@ -524,17 +524,17 @@ export default function DocumentPage() {
                 <button
                     onClick={aiExpand}
                     disabled={isGenerating}
-                    className="fixed bottom-8 right-8 z-[60] flex items-center gap-2.5 px-5 py-3 bg-gradient-to-tr from-purple-600/90 to-indigo-600/90 hover:from-purple-500 hover:to-indigo-500 rounded-2xl shadow-[0_0_30px_rgba(147,51,234,0.3)] backdrop-blur-md border border-white/10 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 group overflow-hidden"
+                    className="fixed bottom-8 right-8 z-[60] flex items-center gap-2.5 px-5 py-3 bg-zinc-900 shadow-[0_0_20px_rgba(0,0,0,0.4)] backdrop-blur-md border border-white/10 transition-all hover:bg-zinc-800 hover:border-white/20 hover:scale-105 active:scale-95 disabled:opacity-50 group overflow-hidden"
                 >
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-in-out" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 ease-in-out" />
                     <div className="relative flex items-center justify-center">
                         {isGenerating ? (
-                            <Loader2 className="w-5 h-5 animate-spin" />
+                            <Loader2 className="w-5 h-5 animate-spin text-zinc-400" />
                         ) : (
-                            <Sparkles className="w-5 h-5 text-indigo-200 group-hover:rotate-12 transition-transform" />
+                            <Sparkles className="w-5 h-5 text-zinc-400 group-hover:text-white group-hover:rotate-12 transition-all duration-300" />
                         )}
                     </div>
-                    <span className="relative font-bold text-sm tracking-wide text-white drop-shadow-sm uppercase">AI Assist</span>
+                    <span className="relative font-bold text-xs tracking-[0.1em] text-zinc-300 group-hover:text-white uppercase transition-colors">AI Assist</span>
                 </button>
             </div>
         </div>
