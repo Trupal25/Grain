@@ -106,6 +106,16 @@ function Sidebar({ onAddNode }: SidebarProps) {
                 >
                     <HelpCircle className="w-5 h-5" />
                 </Button>
+
+                <div className="w-px h-8 bg-white/10 mx-1" />
+
+                <Button
+                    onClick={() => (window as any).runWorkflow?.()}
+                    className="h-10 px-4 rounded-full bg-white text-black hover:bg-zinc-200 shadow-[0_0_15px_rgba(255,255,255,0.2)] transition-all hover:scale-105 active:scale-95 flex items-center gap-2 font-bold text-xs tracking-wider group"
+                >
+                    <div className="w-1.5 h-1.5 rounded-full bg-black animate-pulse group-hover:bg-zinc-600" />
+                    RUN WORKFLOW
+                </Button>
             </div>
 
             {/* User Avatar */}

@@ -123,7 +123,7 @@ export function Sidebar({ className, onToggleTree, isTreeVisible }: SidebarProps
     return (
         <div
             className={cn(
-                "flex flex-col bg-[#0A0A0A] border-r border-zinc-800 transition-all duration-300 ease-in-out sticky top-0 z-40 h-screen py-4 shrink-0",
+                "flex flex-col bg-[#0A0A0A] border-r border-zinc-800 transition-all duration-300 ease-in-out sticky top-0 z-40 h-screen py-6 shrink-0",
                 isCollapsed ? "w-[68px] px-3" : "w-60 px-4",
                 className
             )}
@@ -131,16 +131,17 @@ export function Sidebar({ className, onToggleTree, isTreeVisible }: SidebarProps
 
 
             {/* Logo area */}
-            <div className={cn("mb-8 flex items-center", isCollapsed ? "justify-center" : "px-2")}>
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-white to-zinc-400 flex items-center justify-center shrink-0 shadow-lg shadow-white/5">
-                    <div className="w-4 h-4 rounded-full bg-black/90" />
+            <div className={cn("mb-6 flex items-center", isCollapsed ? "justify-center" : "px-2")}>
+                <div className="w-8 h-8 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center shrink-0 shadow-lg">
+                    <div className="w-4 h-4 rounded-md bg-white flex items-center justify-center text-[10px] font-black text-black">G</div>
                 </div>
                 {!isCollapsed && (
-                    <span className="ml-3 font-bold text-lg tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400">
+                    <span className="ml-3 font-bold text-sm tracking-tight text-white uppercase italic">
                         Grain
                     </span>
                 )}
             </div>
+            <div className="h-px bg-zinc-800/50 mb-6 -mx-4" />
 
             {/* Create Button */}
             <div className="mb-6">

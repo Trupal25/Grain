@@ -60,6 +60,7 @@ function VideoNode({ id, data, selected }: NodeProps) {
 
         if (!prompt) {
             setError('Connect a Text node with a prompt');
+            updateNodeData(id, { workflowStatus: 'error' });
             return;
         }
 
@@ -68,14 +69,21 @@ function VideoNode({ id, data, selected }: NodeProps) {
 
         try {
             const { videoUrl } = await generateVideoAPI(prompt, nodeData.duration);
-            updateNodeData(id, { videoUrl, isGenerating: false });
+            updateNodeData(id, { videoUrl, isGenerating: false, workflowStatus: 'completed' });
             toast.success('Video generated');
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Generation failed');
-            updateNodeData(id, { isGenerating: false });
+            updateNodeData(id, { isGenerating: false, workflowStatus: 'error' });
             toast.error('Failed to generate video');
         }
     };
+
+    // Workflow listener
+    useEffect(() => {
+        if (nodeData.workflowStatus === 'running' && !nodeData.isGenerating) {
+            handleGenerate();
+        }
+    }, [nodeData.workflowStatus, nodeData.isGenerating]);
 
     const handleDownload = () => {
         if (!nodeData.videoUrl) return;
@@ -181,12 +189,19 @@ function VideoNode({ id, data, selected }: NodeProps) {
                                 </div>
                                 <p className="text-[9px] text-zinc-500 uppercase tracking-wider">Uploading...</p>
                             </div>
-                        ) : nodeData.isGenerating ? (
+                        ) : (nodeData.isGenerating || nodeData.workflowStatus === 'running') ? (
                             <div className="flex flex-col items-center gap-2">
-                                <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center animate-pulse">
-                                    <Clapperboard className="w-3.5 h-3.5 text-white/50" />
+                                <div className="w-8 h-8 rounded-lg bg-blue-500/20 border border-blue-500/30 flex items-center justify-center animate-pulse shadow-[0_0_15px_rgba(59,130,246,0.3)]">
+                                    <Clapperboard className="w-3.5 h-3.5 text-blue-400" />
                                 </div>
-                                <p className="text-[9px] text-zinc-500 uppercase tracking-wider">Generating...</p>
+                                <p className="text-[9px] text-blue-400 uppercase tracking-widest font-bold">Directing...</p>
+                            </div>
+                        ) : nodeData.workflowStatus === 'queued' ? (
+                            <div className="flex flex-col items-center gap-2">
+                                <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center">
+                                    <RefreshCw className="w-3.5 h-3.5 text-zinc-600 animate-spin-slow" />
+                                </div>
+                                <p className="text-[9px] text-zinc-600 uppercase tracking-wider">Queued...</p>
                             </div>
                         ) : error ? (
                             <div className="flex flex-col items-center gap-2 text-center">

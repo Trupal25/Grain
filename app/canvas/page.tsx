@@ -179,6 +179,61 @@ function GrainCanvas() {
     }
   }, [nodes, edges, isLoading, projectId, scheduleSave]);
 
+  // Workflow Logic
+  useEffect(() => {
+    (window as any).runWorkflow = () => {
+      const generators = nodes
+        .filter(n => n.type === 'image' || n.type === 'video');
+
+      if (generators.length === 0) return;
+
+      setNodes(nds => nds.map(n => {
+        if (n.type === 'image' || n.type === 'video') {
+          return {
+            ...n,
+            data: {
+              ...n.data as any,
+              workflowStatus: n.id === generators[0].id ? 'queued' : 'idle'
+            }
+          };
+        }
+        return n;
+      }));
+    };
+  }, [nodes, setNodes]);
+
+  // Workflow Sequential Orchestrator
+  useEffect(() => {
+    const generatorNodes = nodes.filter(n => n.type === 'image' || n.type === 'video');
+    const runningNode = generatorNodes.find(n => (n.data as any).workflowStatus === 'running');
+
+    if (runningNode) return;
+
+    const queuedNode = generatorNodes.find(n => (n.data as any).workflowStatus === 'queued');
+    if (queuedNode) {
+      // Move from queued to running
+      setNodes(nds => nds.map(n => n.id === queuedNode.id ? {
+        ...n,
+        data: { ...n.data as any, workflowStatus: 'running' }
+      } : n));
+      return;
+    }
+
+    // Check if we need to queue the next one
+    const lastCompletedIndex = generatorNodes.reduce((acc, n, i) =>
+      (n.data as any).workflowStatus === 'completed' ? i : acc, -1);
+
+    if (lastCompletedIndex !== -1 && lastCompletedIndex < generatorNodes.length - 1) {
+      const nextNode = generatorNodes[lastCompletedIndex + 1];
+      if ((nextNode.data as any).workflowStatus === 'idle') {
+        setNodes(nds => nds.map(n => n.id === nextNode.id ? {
+          ...n,
+          data: { ...n.data as any, workflowStatus: 'queued' }
+        } : n));
+      }
+    }
+  }, [nodes, setNodes]);
+
   const isValidConnection = useCallback((conn: Edge | Connection) => conn.source !== conn.target, []);
   const onConnect = useCallback((params: Connection) => setEdges(eds => addEdge(params, eds)), [setEdges]);
 

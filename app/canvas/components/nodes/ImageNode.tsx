@@ -96,6 +96,7 @@ function ImageNode({ id, data, selected, width, height }: NodeProps) {
 
         if (!prompt) {
             setError('Connect a Text node with a prompt');
+            updateNodeData(id, { workflowStatus: 'error' });
             return;
         }
 
@@ -104,14 +105,21 @@ function ImageNode({ id, data, selected, width, height }: NodeProps) {
 
         try {
             const { imageUrl } = await generateImageAPI(prompt, nodeData.aspectRatio);
-            updateNodeData(id, { imageUrl, isGenerating: false });
+            updateNodeData(id, { imageUrl, isGenerating: false, workflowStatus: 'completed' });
             toast.success('Image generated');
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Generation failed');
-            updateNodeData(id, { isGenerating: false });
+            updateNodeData(id, { isGenerating: false, workflowStatus: 'error' });
             toast.error('Failed to generate image');
         }
     };
+
+    // Workflow listener
+    useEffect(() => {
+        if (nodeData.workflowStatus === 'running' && !nodeData.isGenerating) {
+            handleGenerate();
+        }
+    }, [nodeData.workflowStatus, nodeData.isGenerating]);
 
     const handleDownload = () => {
         if (!nodeData.imageUrl) return;
@@ -226,12 +234,19 @@ function ImageNode({ id, data, selected, width, height }: NodeProps) {
                                 </div>
                                 <p className="text-[9px] text-zinc-500 uppercase tracking-wider">Uploading...</p>
                             </div>
-                        ) : nodeData.isGenerating ? (
+                        ) : (nodeData.isGenerating || nodeData.workflowStatus === 'running') ? (
                             <div className="flex flex-col items-center gap-2">
-                                <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center animate-pulse">
-                                    <Sparkles className="w-3.5 h-3.5 text-white/50" />
+                                <div className="w-8 h-8 rounded-lg bg-zinc-400 border border-zinc-300 flex items-center justify-center animate-pulse shadow-[0_0_15px_rgba(161,161,170,0.4)]">
+                                    <Sparkles className="w-3.5 h-3.5 text-black" />
                                 </div>
-                                <p className="text-[9px] text-zinc-500 uppercase tracking-wider">Generating...</p>
+                                <p className="text-[9px] text-zinc-300 uppercase tracking-widest font-bold">In Progress...</p>
+                            </div>
+                        ) : nodeData.workflowStatus === 'queued' ? (
+                            <div className="flex flex-col items-center gap-2">
+                                <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center">
+                                    <RefreshCw className="w-3.5 h-3.5 text-zinc-600 animate-spin-slow" />
+                                </div>
+                                <p className="text-[9px] text-zinc-600 uppercase tracking-wider">Queued...</p>
                             </div>
                         ) : error ? (
                             <div className="flex flex-col items-center gap-2 text-center">
@@ -258,14 +273,23 @@ function ImageNode({ id, data, selected, width, height }: NodeProps) {
                         <Upload className="w-3 h-3" />
                     </Button>
                     <div className="w-px h-3 bg-white/10" />
+                    <div className="w-px h-3 bg-white/10" />
                     <Select value={nodeData.model} onValueChange={(v) => updateNodeData(id, { model: v })}>
-                        <SelectTrigger className="h-6 border-0 bg-transparent text-[9px] text-zinc-300 w-[80px] focus:ring-0 hover:bg-white/5 rounded-full"><SelectValue placeholder="Model" /></SelectTrigger>
-                        <SelectContent className="bg-[#1A1A1A] border-zinc-800 text-zinc-300 z-50">{IMAGE_MODELS.map(m => <SelectItem key={m.value} value={m.value} className="text-[9px]">{m.label}</SelectItem>)}</SelectContent>
+                        <SelectTrigger className="h-6 border-0 bg-transparent text-[10px] text-zinc-300 w-[100px] focus:ring-0 hover:bg-white/5 rounded-full px-2">
+                            <SelectValue placeholder="Model" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-[#1A1A1A] border-zinc-800 text-zinc-300 z-50">
+                            {IMAGE_MODELS.map(m => <SelectItem key={m.value} value={m.value} className="text-[10px]">{m.label}</SelectItem>)}
+                        </SelectContent>
                     </Select>
                     <div className="w-px h-3 bg-white/10" />
                     <Select value={nodeData.aspectRatio} onValueChange={(v) => updateNodeData(id, { aspectRatio: v })}>
-                        <SelectTrigger className="h-6 border-0 bg-transparent text-[9px] text-zinc-300 w-[45px] focus:ring-0 hover:bg-white/5 rounded-full"><SelectValue placeholder="Ratio" /></SelectTrigger>
-                        <SelectContent className="bg-[#1A1A1A] border-zinc-800 text-zinc-300 z-50">{ASPECT_RATIOS.map(r => <SelectItem key={r.value} value={r.value} className="text-[9px]">{r.label}</SelectItem>)}</SelectContent>
+                        <SelectTrigger className="h-6 border-0 bg-transparent text-[10px] text-zinc-300 w-[60px] focus:ring-0 hover:bg-white/5 rounded-full px-2">
+                            <SelectValue placeholder="Ratio" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-[#1A1A1A] border-zinc-800 text-zinc-300 z-50">
+                            {ASPECT_RATIOS.map(r => <SelectItem key={r.value} value={r.value} className="text-[10px]">{r.label}</SelectItem>)}
+                        </SelectContent>
                     </Select>
                     <div className="w-px h-3 bg-white/10" />
                     <Button size="icon" variant="ghost" className="h-6 w-6 rounded-full text-red-400/80 hover:text-red-400 hover:bg-red-500/10" onClick={() => deleteElements({ nodes: [{ id }] })}>
