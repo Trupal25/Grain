@@ -334,20 +334,6 @@ export default function DocumentPage() {
                         </div>
 
                         <div className="flex items-center gap-2">
-                            {/* AI Button */}
-                            <button
-                                onClick={aiExpand}
-                                disabled={isGenerating}
-                                className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 rounded-lg transition-all disabled:opacity-50"
-                            >
-                                {isGenerating ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : (
-                                    <Sparkles className="w-4 h-4" />
-                                )}
-                                AI Assist
-                            </button>
-
                             {/* More Options */}
                             <div className="relative">
                                 <button
@@ -534,6 +520,22 @@ export default function DocumentPage() {
                     opacity: 1 !important;
                 }
             `}</style>
+                {/* Floating AI Assist Button */}
+                <button
+                    onClick={aiExpand}
+                    disabled={isGenerating}
+                    className="fixed bottom-8 right-8 z-[60] flex items-center gap-2.5 px-5 py-3 bg-gradient-to-tr from-purple-600/90 to-indigo-600/90 hover:from-purple-500 hover:to-indigo-500 rounded-2xl shadow-[0_0_30px_rgba(147,51,234,0.3)] backdrop-blur-md border border-white/10 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 group overflow-hidden"
+                >
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-in-out" />
+                    <div className="relative flex items-center justify-center">
+                        {isGenerating ? (
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                        ) : (
+                            <Sparkles className="w-5 h-5 text-indigo-200 group-hover:rotate-12 transition-transform" />
+                        )}
+                    </div>
+                    <span className="relative font-bold text-sm tracking-wide text-white drop-shadow-sm uppercase">AI Assist</span>
+                </button>
             </div>
         </div>
     );
