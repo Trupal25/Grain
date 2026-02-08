@@ -95,6 +95,15 @@ function FolderTreeItem({
                                     key={doc.id}
                                     onClick={() => onSelectDocument(doc)}
                                     className="w-full flex items-center gap-2 px-2 py-1 text-sm text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors group"
+                                    draggable
+                                    onDragStart={(e) => {
+                                        e.dataTransfer.setData('application/reactflow/note', JSON.stringify({
+                                            noteId: doc.id,
+                                            title: doc.name,
+                                            content: doc.content
+                                        }));
+                                        e.dataTransfer.effectAllowed = 'copy';
+                                    }}
                                 >
                                     <div className="w-5 h-5 flex items-center justify-center shrink-0">
                                         <FileText className="w-3.5 h-3.5 text-blue-400" />
@@ -182,12 +191,13 @@ export function WorkspaceSidebar({
                         </div>
                         <span className="font-bold text-sm tracking-tight text-white">GRAIN</span>
                         <div className="ml-auto flex items-center gap-1">
-                            {/* <button className="p-1 hover:bg-zinc-800 rounded transition-colors" title="Grid View">
-                                <Grid3X3 className="w-3.5 h-3.5 text-zinc-500" />
-                            </button> */}
-                            {/* <button className="p-1 hover:bg-zinc-800 rounded transition-colors" title="Graph View">
-                                <Layers className="w-3.5 h-3.5 text-zinc-500" />
-                            </button> */}
+                            <button
+                                onClick={onToggleCollapse}
+                                className="p-1 hover:bg-zinc-800 rounded transition-colors text-zinc-500 hover:text-white"
+                                title="Toggle Sidebar"
+                            >
+                                <PanelLeft className="w-4 h-4" />
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -254,6 +264,15 @@ export function WorkspaceSidebar({
                                         key={doc.id}
                                         onClick={() => onSelectDocument(doc)}
                                         className="w-full flex items-center gap-2 px-2 py-1 text-sm text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors group pl-7"
+                                        draggable
+                                        onDragStart={(e) => {
+                                            e.dataTransfer.setData('application/reactflow/note', JSON.stringify({
+                                                noteId: doc.id,
+                                                title: doc.name,
+                                                content: doc.content
+                                            }));
+                                            e.dataTransfer.effectAllowed = 'copy';
+                                        }}
                                     >
                                         <FileText className="w-3.5 h-3.5 text-blue-400/80" />
                                         <span className="truncate flex-1 text-left">{doc.name}</span>

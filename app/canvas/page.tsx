@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState, Suspense } from 'react';
 import { createPortal } from 'react-dom';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
+import { cn } from '@/lib/utils';
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -24,15 +25,16 @@ import {
 import ImageNode from './components/nodes/ImageNode';
 import VideoNode from './components/nodes/VideoNode';
 import TextNode from './components/nodes/TextNode';
+import NoteNode from './components/nodes/NoteNode';
 import ToolsSidebar from './components/Sidebar';
 import { Sidebar as AppSidebar } from '@/components/Sidebar';
 import { WorkspaceSidebar } from '@/components/WorkspaceSidebar';
-import { ImageIcon, Video, AlignLeft, Loader2, Cloud, CloudOff, Check } from 'lucide-react';
+import { ImageIcon, Video, AlignLeft, Loader2, Cloud, CloudOff, Check, PanelLeft } from 'lucide-react';
 import type { ImageNodeData, VideoNodeData, TextNodeData } from './types';
 import { useAutoSave, loadProject, createProject } from '@/lib/project';
 import { Folder as FolderType, Document as DocumentType, Project as ProjectType } from '@/lib/db/schema';
 
-const nodeTypes: NodeTypes = { image: ImageNode, video: VideoNode, text: TextNode };
+const nodeTypes: NodeTypes = { image: ImageNode, video: VideoNode, text: TextNode, note: NoteNode };
 
 let nodeId = 0;
 const getNodeId = (type: string) => `${type}-${++nodeId}`;
@@ -41,6 +43,7 @@ const defaultData = {
   image: { label: 'Image', model: 'gemini-imagen', aspectRatio: '1:1' } as ImageNodeData,
   video: { label: 'Video', model: 'gemini-veo', duration: '4s' } as VideoNodeData,
   text: { label: 'Prompt', model: 'gpt-4o', text: '' } as TextNodeData,
+  note: { label: 'Note', noteId: '', title: '', content: '' } as any,
 };
 
 interface MenuState { x: number; y: number; sourceId: string }
@@ -201,6 +204,45 @@ function GrainCanvas() {
     setNodes(nds => [...nds, { id, type, position: { x: 300 + nds.length * 50, y: 200 + nds.length * 40 }, data: defaultData[type] }]);
   }, [setNodes]);
 
+  const onDragOver = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'copy';
+  }, []);
+
+  const onDrop = useCallback(
+    (event: React.DragEvent) => {
+      event.preventDefault();
+
+      const dataString = event.dataTransfer.getData('application/reactflow/note');
+      if (!dataString) return;
+
+      try {
+        const noteData = JSON.parse(dataString);
+        const position = screenToFlowPosition({
+          x: event.clientX,
+          y: event.clientY,
+        });
+
+        const newNode: Node = {
+          id: getNodeId('note'),
+          type: 'note',
+          position,
+          data: {
+            noteId: noteData.noteId,
+            title: noteData.title,
+            content: noteData.content,
+            label: 'Note'
+          },
+        };
+
+        setNodes((nds) => nds.concat(newNode));
+      } catch (e) {
+        console.error('Failed to drop note', e);
+      }
+    },
+    [screenToFlowPosition, setNodes],
+  );
+
   // Loading state
   if (!isUserLoaded || isLoading) {
     return (
@@ -241,38 +283,50 @@ function GrainCanvas() {
         </div>
         <div className="flex-1 relative h-full">
           {/* Header */}
-          <div className="absolute top-6 left-24 z-50 pointer-events-none select-none">
-            <h1 className="text-sm font-bold tracking-tight text-white flex items-center gap-2">
-              <div className="w-4 h-4 rounded-md bg-white text-black flex items-center justify-center text-[10px] font-black">G</div>
-              Grain
-            </h1>
-            <div className="flex items-center gap-2 mt-0.5 ml-6">
-              <p className="text-[10px] text-zinc-600 font-mono">{projectName}</p>
-              {/* Save Status Indicator */}
-              <div className="flex items-center gap-1 text-[10px]">
-                {saveStatus === 'saving' && (
-                  <>
-                    <Cloud className="w-3 h-3 text-yellow-500 animate-pulse" />
-                    <span className="text-yellow-500">Saving...</span>
-                  </>
-                )}
-                {saveStatus === 'saved' && (
-                  <>
-                    <Check className="w-3 h-3 text-green-500" />
-                    <span className="text-green-500">Saved</span>
-                  </>
-                )}
-                {saveStatus === 'error' && (
-                  <>
-                    <CloudOff className="w-3 h-3 text-red-500" />
-                    <span className="text-red-500">Error</span>
-                  </>
-                )}
+          <div className="absolute top-6 left-24 z-50 select-none flex items-center gap-3">
+            <button
+              onClick={() => setIsTreeCollapsed(!isTreeCollapsed)}
+              className={cn(
+                "p-2 rounded-lg bg-zinc-900/50 border border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors pointer-events-auto",
+                !isTreeCollapsed && "lg:hidden" // Optionally hide on large screens if sidebar takes space? No, keep it.
+              )}
+            >
+              <PanelLeft className="w-4 h-4" />
+            </button>
+            <div className="pointer-events-none">
+              <h1 className="text-sm font-bold tracking-tight text-white flex items-center gap-2">
+                <div className="w-4 h-4 rounded-md bg-white text-black flex items-center justify-center text-[10px] font-black">G</div>
+                Grain
+              </h1>
+              <div className="flex items-center gap-2 mt-0.5 ml-6">
+                <p className="text-[10px] text-zinc-600 font-mono">{projectName}</p>
+                {/* Save Status Indicator */}
+                <div className="flex items-center gap-1 text-[10px]">
+                  {saveStatus === 'saving' && (
+                    <>
+                      <Cloud className="w-3 h-3 text-yellow-500 animate-pulse" />
+                      <span className="text-yellow-500">Saving...</span>
+                    </>
+                  )}
+                  {saveStatus === 'saved' && (
+                    <>
+                      <Check className="w-3 h-3 text-green-500" />
+                      <span className="text-green-500">Saved</span>
+                    </>
+                  )}
+                  {saveStatus === 'error' && (
+                    <>
+                      <CloudOff className="w-3 h-3 text-red-500" />
+                      <span className="text-red-500">Error</span>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           </div>
 
-          <ToolsSidebar onAddNode={addNode} />
+
+
 
           <ReactFlow
             nodes={nodes}
@@ -291,6 +345,8 @@ function GrainCanvas() {
             proOptions={{ hideAttribution: true }}
             selectionMode={SelectionMode.Partial}
             panOnScroll
+            onDragOver={onDragOver}
+            onDrop={onDrop}
           >
             <Background color="#333" gap={24} size={1} variant={BackgroundVariant.Dots} />
           </ReactFlow>
@@ -326,6 +382,7 @@ function GrainCanvas() {
           )}
         </div>
       </div>
+      <ToolsSidebar onAddNode={addNode} />
     </div>
   );
 }

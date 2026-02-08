@@ -28,7 +28,7 @@ interface SidebarProps {
 
 function Sidebar({ onAddNode }: SidebarProps) {
     return (
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-row gap-4 pointer-events-auto">
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[60] flex flex-row gap-4 pointer-events-auto">
             {/* Main Floating Dock */}
             <div className="flex flex-row items-center gap-3 p-2 bg-zinc-900/90 backdrop-blur-xl border border-white/10 rounded-full shadow-2xl ring-1 ring-white/5">
 
@@ -42,17 +42,17 @@ function Sidebar({ onAddNode }: SidebarProps) {
                                 <Plus className="w-5 h-5" />
                             </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent side="top" align="center" className="w-48 bg-[#1A1A1A] border-zinc-800 text-zinc-300 mb-2 p-1 rounded-xl shadow-2xl">
+                        <DropdownMenuContent side="top" align="center" className="w-48 bg-[#1A1A1A] border-zinc-800 text-zinc-300 mb-2 p-1 rounded-xl shadow-2xl z-[70]">
                             <DropdownMenuLabel className="text-xs font-normal text-zinc-500 px-2 py-1.5">Add to Canvas</DropdownMenuLabel>
-                            <DropdownMenuItem onClick={() => onAddNode('image')} className="text-sm focus:bg-white/10 focus:text-white rounded-lg cursor-pointer py-2">
+                            <DropdownMenuItem onSelect={() => onAddNode('image')} className="text-sm focus:bg-white/10 focus:text-white rounded-lg cursor-pointer py-2">
                                 <ImageIcon className="w-4 h-4 mr-2 text-purple-400" />
                                 Image Generation
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => onAddNode('video')} className="text-sm focus:bg-white/10 focus:text-white rounded-lg cursor-pointer py-2">
+                            <DropdownMenuItem onSelect={() => onAddNode('video')} className="text-sm focus:bg-white/10 focus:text-white rounded-lg cursor-pointer py-2">
                                 <Video className="w-4 h-4 mr-2 text-blue-400" />
                                 Video Scene
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => onAddNode('text')} className="text-sm focus:bg-white/10 focus:text-white rounded-lg cursor-pointer py-2">
+                            <DropdownMenuItem onSelect={() => onAddNode('text')} className="text-sm focus:bg-white/10 focus:text-white rounded-lg cursor-pointer py-2">
                                 <AlignLeft className="w-4 h-4 mr-2 text-green-400" />
                                 Text Prompt
                             </DropdownMenuItem>
@@ -66,7 +66,8 @@ function Sidebar({ onAddNode }: SidebarProps) {
                     variant="ghost"
                     size="icon"
                     className="w-10 h-10 rounded-full text-zinc-400 hover:text-white hover:bg-white/10 transition-all"
-                    title="Clusters"
+                    title="Quick Add Image (Debug)"
+                    onClick={() => onAddNode('image')}
                 >
                     <Boxes className="w-5 h-5" />
                 </Button>

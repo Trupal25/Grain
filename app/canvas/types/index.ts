@@ -97,3 +97,10 @@ export const DURATIONS = [
     { value: '8s', label: '8 seconds' },
     { value: '16s', label: '16 seconds' },
 ] as const;
+
+/* Note Node */
+export interface NoteNodeData extends BaseNodeData {
+    id?: string;
+    title?: string;
+    content?: string;
+}
