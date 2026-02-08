@@ -54,90 +54,90 @@ function NoteNode({ id, data, selected }: NodeProps) {
                 minWidth={300}
                 minHeight={200}
                 isVisible={selected}
-                lineClassName="!border-zinc-600 opacity-50"
-                handleClassName="!w-2.5 !h-2.5 !bg-zinc-400 !rounded-full !border-none"
+                lineClassName="!border-blue-500/30 opacity-50"
+                handleClassName="!w-3 !h-3 !bg-blue-500/50 !rounded-full !border-2 !border-zinc-900 shadow-lg"
             />
 
             <div
                 className={cn(
-                    "w-full h-full flex flex-col bg-[#1e1e1e] border transition-all duration-200 rounded-lg overflow-hidden shadow-sm",
-                    selected ? "border-blue-500/60 shadow-[0_0_0_1px_rgba(59,130,246,0.6)]" : "border-zinc-800 hover:border-zinc-700"
+                    "w-full h-full flex flex-col transition-all duration-300 rounded-xl overflow-hidden backdrop-blur-md shadow-2xl",
+                    "bg-[#1A1A1A]/95 border border-white/[0.08]",
+                    selected
+                        ? "ring-2 ring-blue-500/40 border-blue-500/40 shadow-blue-500/10"
+                        : "hover:border-white/20 hover:shadow-white/5"
                 )}
             >
-                {/* Header */}
-                <div className="flex items-center gap-2 px-3 py-2 border-b border-white/5 bg-white/[0.02] shrink-0 h-9 drag-handle">
-                    <div className="flex items-center justify-center w-4 h-4 rounded text-zinc-400">
+                {/* Header - Premium Gradient */}
+                <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-white/[0.04] to-transparent border-b border-white/[0.05] shrink-0 h-10 drag-handle">
+                    <div className="flex items-center justify-center w-5 h-5 rounded-md bg-blue-500/10 text-blue-400 border border-blue-500/20">
                         <FileText className="w-3.5 h-3.5" />
                     </div>
-                    <span className="text-[13px] font-medium text-zinc-300 truncate flex-1 leading-none pt-0.5">
+                    <span className="text-[13px] font-semibold text-zinc-200 truncate flex-1 leading-none pt-0.5 tracking-tight">
                         {nodeData.title || 'Untitled Note'}
                     </span>
-                    <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={handleOpen} className="p-1 hover:bg-white/10 rounded text-zinc-500 hover:text-zinc-300" title="Open Full Document">
-                            <Maximize2 className="w-3 h-3" />
+                    <div className="flex items-center opacity-0 group-hover:opacity-100 transition-all duration-200">
+                        <button
+                            onClick={handleOpen}
+                            className="p-1.5 hover:bg-white/10 rounded-md text-zinc-400 hover:text-white transition-colors"
+                            title="Open Full Document"
+                        >
+                            <Maximize2 className="w-3.5 h-3.5" />
                         </button>
                     </div>
                 </div>
 
                 {/* Editor Content Area */}
-                {/* 'nodrag' prevents React Flow from capturing drag events inside the editor */}
-                {/* 'nopan' prevents canvas panning when interacting with scrollbar or text */}
-                {/* 'nowheel' prevents canvas zooming when scrolling inside the note */}
-                <div className="flex-1 overflow-hidden relative nodrag nopan nowheel bg-[#1e1e1e] cursor-text">
+                <div className="flex-1 overflow-hidden relative nodrag nopan nowheel bg-black/20 cursor-text">
                     <style jsx global>{`
                         .custom-scrollbar {
                             scrollbar-width: thin;
-                            scrollbar-color: #3f3f46 transparent;
+                            scrollbar-color: rgba(255,255,255,0.1) transparent;
                         }
                         .custom-scrollbar::-webkit-scrollbar {
-                            width: 6px;
-                            height: 6px;
+                            width: 5px;
+                            height: 5px;
                         }
                         .custom-scrollbar::-webkit-scrollbar-track {
                             background: transparent;
                         }
                         .custom-scrollbar::-webkit-scrollbar-thumb {
-                            background: #3f3f46;
-                            border-radius: 3px;
-                            border: 1px solid #1e1e1e;
+                            background: rgba(255,255,255,0.1);
+                            border-radius: 10px;
                         }
                         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-                            background: #52525b;
+                            background: rgba(255,255,255,0.2);
                         }
 
-                        /* BlockNote Overrides for "Note Card" look */
+                        /* BlockNote Overrides */
                         .bn-editor {
                             padding: 0 !important;
+                            background: transparent !important;
                         }
                         .bn-block-content {
                             padding-top: 2px !important; 
                             padding-bottom: 2px !important;
+                            background: transparent !important;
                         }
-
-                        /* Scale down headings */
+                        
+                        /* Scale down and refine headings */
                         .bn-editor h1 {
                             font-size: 1.25rem !important;
-                            font-weight: 700 !important;
-                            letter-spacing: -0.02em !important;
-                            line-height: 1.2 !important;
-                            margin-top: 0.5rem !important;
-                            margin-bottom: 0.25rem !important;
+                            font-weight: 800 !important;
+                            letter-spacing: -0.025em !important;
+                            color: #fff !important;
+                            margin-top: 1rem !important;
+                            margin-bottom: 0.5rem !important;
                         }
                         .bn-editor h2 {
                             font-size: 1.1rem !important;
-                            font-weight: 600 !important;
-                            margin-top: 0.5rem !important;
-                            margin-bottom: 0.25rem !important;
-                        }
-                        .bn-editor h3 {
-                            font-size: 1rem !important;
-                            font-weight: 600 !important;
-                            margin-top: 0.25rem !important;
-                            margin-bottom: 0.25rem !important;
+                            font-weight: 700 !important;
+                            color: #f4f4f5 !important;
+                            margin-top: 0.75rem !important;
                         }
                         .bn-editor p {
-                             font-size: 0.9rem !important;
-                             line-height: 1.4 !important;
+                             font-size: 0.925rem !important;
+                             color: #a1a1aa !important;
+                             line-height: 1.6 !important;
                         }
 
                         /* Hide placeholders */
@@ -150,12 +150,11 @@ function NoteNode({ id, data, selected }: NodeProps) {
                              display: none !important;
                         }
 
-                        /* Hide side menu/drag handles in simpler view */
                         .bn-side-menu {
                             display: none !important;
                         }
                     `}</style>
-                    <div className="h-full w-full overflow-y-auto custom-scrollbar px-3 py-2">
+                    <div className="h-full w-full overflow-y-auto custom-scrollbar px-5 py-4">
                         <Editor
                             initialContent={initialEditorContent}
                             onChange={handleContentChange}
@@ -165,21 +164,42 @@ function NoteNode({ id, data, selected }: NodeProps) {
                 </div>
             </div>
 
-            {/* Toolbar */}
-            <NodeToolbar isVisible={selected} position={Position.Top} offset={5} className="!bg-transparent !p-0 !border-none">
-                <div className="flex items-center gap-0.5 p-1 bg-zinc-900 border border-zinc-700/50 rounded-md shadow-xl backdrop-blur-sm transform -translate-y-2">
-                    <Button size="icon" variant="ghost" className="h-6 w-6 rounded hover:bg-white/10 text-zinc-400" onClick={handleCopy} title="Copy Content JSON">
-                        {copied ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
+            {/* Floating Toolbar - Ultra Glassy */}
+            <NodeToolbar isVisible={selected} position={Position.Top} offset={12} className="!bg-transparent !p-0 !border-none">
+                <div className="flex items-center gap-1 p-1 bg-zinc-900/80 border border-white/10 rounded-lg shadow-2xl backdrop-blur-xl transform -translate-y-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                    <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8 rounded-md hover:bg-white/10 text-zinc-400 hover:text-white transition-all"
+                        onClick={handleCopy}
+                        title="Copy Content JSON"
+                    >
+                        {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
                     </Button>
-                    <div className="w-px h-3 bg-white/10 mx-0.5" />
-                    <Button size="icon" variant="ghost" className="h-6 w-6 rounded hover:bg-red-500/20 text-red-400/80 hover:text-red-400" onClick={() => deleteElements({ nodes: [{ id }] })} title="Delete Node">
-                        <Trash2 className="w-3.5 h-3.5" />
+                    <div className="w-px h-4 bg-white/10 mx-0.5" />
+                    <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8 rounded-md hover:bg-rose-500/20 text-zinc-400 hover:text-rose-400 transition-all"
+                        onClick={() => deleteElements({ nodes: [{ id }] })}
+                        title="Delete Node"
+                    >
+                        <Trash2 className="w-4 h-4" />
                     </Button>
                 </div>
             </NodeToolbar>
 
-            <Handle type="target" position={Position.Left} className="!bg-zinc-600 !w-1.5 !h-8 !rounded-full !-left-2 opacity-0 group-hover:opacity-100 transition-opacity border-none" />
-            <Handle type="source" position={Position.Right} className="!bg-zinc-600 !w-1.5 !h-8 !rounded-full !-right-2 opacity-0 group-hover:opacity-100 transition-opacity border-none" />
+            {/* Minimal High-Contrast Handles */}
+            <Handle
+                type="target"
+                position={Position.Left}
+                className="!bg-blue-500/50 !w-1.5 !h-10 !rounded-full !-left-2.5 opacity-0 group-hover:opacity-100 transition-all duration-300 border-none shadow-[0_0_10px_rgba(59,130,246,0.3)]"
+            />
+            <Handle
+                type="source"
+                position={Position.Right}
+                className="!bg-blue-500/50 !w-1.5 !h-10 !rounded-full !-right-2.5 opacity-0 group-hover:opacity-100 transition-all duration-300 border-none shadow-[0_0_10px_rgba(59,130,246,0.3)]"
+            />
         </div>
     );
 }
