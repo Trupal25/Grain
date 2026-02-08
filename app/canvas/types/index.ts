@@ -71,16 +71,16 @@ export interface TextNodeData extends BaseNodeData {
 }
 
 export type TextModel =
-    | 'gpt-4o'
-    | 'claude-3-opus'
-    | 'gemini-1.5-pro'
-    | 'llama-3-70b';
+    | 'gemini-2.5-pro'
+    | 'gemini-2.5-flash'
+    | 'gemini-2.0-flash'
+    | 'gemini-2.0-flash-lite';
 
 export const TEXT_MODELS: { value: TextModel; label: string }[] = [
-    { value: 'gpt-4o', label: 'GPT-4o' },
-    { value: 'claude-3-opus', label: 'Claude 3 Opus' },
-    { value: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro' },
-    { value: 'llama-3-70b', label: 'Llama 3 70B' },
+    { value: 'gemini-2.0-flash-lite', label: 'Gemini 2.0 Flash Lite' },
+    { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash' },
+    { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
+    { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
 ];
 
 /* Aspect Ratios */
@@ -103,4 +103,16 @@ export interface NoteNodeData extends BaseNodeData {
     id?: string;
     title?: string;
     content?: string;
+}
+
+/* Chat Node */
+export interface ChatMessage {
+    role: 'user' | 'assistant';
+    content: string;
+}
+
+export interface ChatNodeData extends BaseNodeData {
+    messages: ChatMessage[];
+    isProcessing?: boolean;
+    model: TextModel;
 }

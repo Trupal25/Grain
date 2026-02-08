@@ -3,12 +3,12 @@ import { useReactFlow, type Node, type Edge } from '@xyflow/react';
 import type { TextNodeData } from '@/app/types';
 
 /**
- * Hook to find prompt text from connected TextNodes
+ * Hook to find all inputs from connected nodes (text, images, videos, etc.)
  */
-export function useConnectedPrompt(nodeId: string) {
+export function useNodeInputs(nodeId: string) {
     const { getNodes, getEdges } = useReactFlow();
 
-    const getPrompt = useCallback(() => {
+    const getInputs = useCallback(() => {
         const edges = getEdges();
         const nodes = getNodes();
 
@@ -19,16 +19,44 @@ export function useConnectedPrompt(nodeId: string) {
         const sourceNodeIds = incomingEdges.map((e: Edge) => e.source);
         const sourceNodes = nodes.filter((n: Node) => sourceNodeIds.includes(n.id));
 
-        // Find TextNodes and extract their text
-        const textNodes = sourceNodes.filter((n: Node) => n.type === 'text');
-        const prompts = textNodes
-            .map((n: Node) => (n.data as TextNodeData).text)
-            .filter(Boolean);
+        const texts: string[] = [];
+        const images: string[] = [];
+        const videos: string[] = [];
 
-        return prompts.join('\n\n');
+        sourceNodes.forEach((n: Node) => {
+            const data = n.data as any;
+
+            // Extract text/prompts
+            if (n.type === 'text' && data.text) {
+                texts.push(data.text);
+            } else if (n.type === 'note' && data.content) {
+                texts.push(data.content);
+            } else if (n.type === 'chat' && data.messages?.length > 0) {
+                // Get the last assistant message as text input if available
+                const lastAssistantMsg = [...data.messages].reverse().find(m => m.role === 'assistant');
+                if (lastAssistantMsg) texts.push(lastAssistantMsg.content);
+            }
+
+            // Extract images
+            if (n.type === 'image' && data.imageUrl) {
+                images.push(data.imageUrl);
+            }
+
+            // Extract videos
+            if (n.type === 'video' && data.videoUrl) {
+                videos.push(data.videoUrl);
+            }
+        });
+
+        return {
+            texts,
+            images,
+            videos,
+            combinedText: texts.join('\n\n')
+        };
     }, [nodeId, getNodes, getEdges]);
 
-    return { getPrompt };
+    return { getInputs };
 }
 
 /**

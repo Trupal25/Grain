@@ -1,21 +1,99 @@
 import { GoogleGenAI, Modality } from '@google/genai';
 
 // Initialize the client
-const apiKey = process.env.GOOGLE_AI_API_KEY;
+const apiKey = process.env.GEMINI_API_KEY;
 
 if (!apiKey) {
-    console.warn('[Grain AI] GOOGLE_AI_API_KEY not set - AI features will not work');
+    console.warn('[Grain AI] GEMINI_API_KEY not set - AI features will not work');
 }
 
 export const ai = apiKey ? new GoogleGenAI({ apiKey }) : null;
 
+// Map simple model names to versioned ones for the v1beta API
+const MODEL_ALIASES: Record<string, string> = {
+    'gemini-1.5-pro': 'gemini-2.5-pro',
+    'gemini-1.5-flash': 'gemini-2.0-flash-lite',
+    'gemini-2.0-flash': 'gemini-2.0-flash',
+    'gemini-2.0-flash-lite': 'gemini-2.0-flash-lite',
+    'gemini-2.5-pro': 'gemini-2.5-pro',
+    'gemini-2.5-flash': 'gemini-2.5-flash',
+    'gpt-4o': 'gemini-2.0-flash-lite',
+    'claude-3-opus': 'gemini-2.5-pro',
+};
+
+function getModelName(model: string) {
+    return MODEL_ALIASES[model] || model;
+}
+
 // Text generation using Gemini
-export async function generateText(prompt: string, model = 'gemini-2.0-flash') {
-    if (!ai) throw new Error('AI client not initialized - set GOOGLE_AI_API_KEY');
+export async function generateText(prompt: string, model = 'gemini-2.0-flash-lite') {
+    if (!ai) throw new Error('AI client not initialized - set GEMINI_API_KEY');
 
     const response = await ai.models.generateContent({
-        model,
+        model: getModelName(model),
         contents: prompt,
+    });
+
+    return response.text ?? '';
+}
+
+// Helper to fetch and convert image URL to base64
+async function urlToBase64(url: string) {
+    try {
+        const response = await fetch(url);
+        const buffer = await response.arrayBuffer();
+        const base64 = Buffer.from(buffer).toString('base64');
+        const contentType = response.headers.get('content-type') || 'image/png';
+        return {
+            inlineData: {
+                data: base64,
+                mimeType: contentType
+            }
+        };
+    } catch (e) {
+        console.error('Failed to convert image to base64:', e);
+        return null;
+    }
+}
+
+// Chat generation using Gemini
+export async function generateChat(
+    messages: { role: 'user' | 'assistant', content: string }[],
+    model = 'gemini-2.0-flash-lite',
+    attachments: string[] = [],
+    context = ''
+) {
+    if (!ai) throw new Error('AI client not initialized - set GEMINI_API_KEY');
+
+    // Prepare content parts
+    const history = await Promise.all(messages.map(async (msg, idx) => {
+        const isLastMessage = idx === messages.length - 1;
+        const parts: any[] = [{ text: msg.content }];
+
+        // Inject context and attachments into the last user message
+        if (isLastMessage && msg.role === 'user') {
+            if (context) {
+                parts[0].text = `[CONNECTED CONTEXT]\n${context}\n\n[USER INQUIRY]\n${msg.content}`;
+            }
+
+            // Process image attachments
+            for (const url of attachments) {
+                if (url.match(/\.(jpg|jpeg|png|webp|gif)$|^data:image/i)) {
+                    const imgPart = await urlToBase64(url);
+                    if (imgPart) parts.push(imgPart);
+                }
+            }
+        }
+
+        return {
+            role: msg.role === 'assistant' ? 'model' : 'user',
+            parts
+        };
+    }));
+
+    const response = await ai.models.generateContent({
+        model: getModelName(model),
+        contents: history,
     });
 
     return response.text ?? '';
@@ -23,7 +101,7 @@ export async function generateText(prompt: string, model = 'gemini-2.0-flash') {
 
 // Image generation using Gemini with native image output
 export async function generateImage(prompt: string, aspectRatio = '1:1') {
-    if (!ai) throw new Error('AI client not initialized - set GOOGLE_AI_API_KEY');
+    if (!ai) throw new Error('AI client not initialized - set GEMINI_API_KEY');
 
     // Use Gemini 2.0 Flash with image generation capability
     const response = await ai.models.generateContent({
@@ -49,7 +127,7 @@ export async function generateImage(prompt: string, aspectRatio = '1:1') {
 
 // Video generation using Veo
 export async function generateVideo(prompt: string, durationSeconds = 4) {
-    if (!ai) throw new Error('AI client not initialized - set GOOGLE_AI_API_KEY');
+    if (!ai) throw new Error('AI client not initialized - set GEMINI_API_KEY');
 
     // Start video generation
     let operation = await ai.models.generateVideos({
@@ -77,14 +155,14 @@ export async function generateVideo(prompt: string, durationSeconds = 4) {
 
 // Enhance prompt using Gemini
 export async function enhancePrompt(prompt: string, type: 'image' | 'video') {
-    if (!ai) throw new Error('AI client not initialized - set GOOGLE_AI_API_KEY');
+    if (!ai) throw new Error('AI client not initialized - set GEMINI_API_KEY');
 
     const systemPrompt = type === 'image'
         ? 'You are an expert at writing detailed, creative image generation prompts. Enhance the following prompt with vivid details, artistic style, lighting, and composition. Keep it concise (under 200 words). Output only the enhanced prompt, nothing else.'
         : 'You are an expert at writing cinematic video generation prompts. Enhance the following prompt with camera movement, scene description, mood, and pacing. Keep it concise (under 200 words). Output only the enhanced prompt, nothing else.';
 
     const response = await ai.models.generateContent({
-        model: 'gemini-2.0-flash',
+        model: getModelName('gemini-2.0-flash-lite'),
         contents: `${systemPrompt}\n\nOriginal prompt: ${prompt}`,
     });
 

@@ -3,7 +3,7 @@
 import { memo, useState, useEffect, useRef, useMemo } from 'react';
 import { Handle, Position, NodeProps, NodeToolbar, useReactFlow, NodeResizer } from '@xyflow/react';
 import { ImageNodeData, IMAGE_MODELS, ASPECT_RATIOS } from '../../types';
-import { useConnectedPrompt, generateImageAPI } from '@/lib/hooks';
+import { useNodeInputs, generateImageAPI } from '@/lib/hooks';
 import {
     Select,
     SelectContent,
@@ -31,7 +31,7 @@ const MAX_SIZE = 600;
 function ImageNode({ id, data, selected, width, height }: NodeProps) {
     const nodeData = data as unknown as ImageNodeData;
     const { updateNodeData, deleteElements, setNodes } = useReactFlow();
-    const { getPrompt } = useConnectedPrompt(id);
+    const { getInputs } = useNodeInputs(id);
 
     // Track previous ratio to detect changes
     const prevRatioRef = useRef<string>(nodeData.aspectRatio || '1:1');
@@ -92,7 +92,8 @@ function ImageNode({ id, data, selected, width, height }: NodeProps) {
     }, [label, id, updateNodeData]);
 
     const handleGenerate = async () => {
-        const prompt = nodeData.prompt || getPrompt();
+        const inputs = getInputs();
+        const prompt = nodeData.prompt || inputs.combinedText;
 
         if (!prompt) {
             setError('Connect a Text node with a prompt');

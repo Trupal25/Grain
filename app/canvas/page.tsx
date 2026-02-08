@@ -26,15 +26,22 @@ import ImageNode from './components/nodes/ImageNode';
 import VideoNode from './components/nodes/VideoNode';
 import TextNode from './components/nodes/TextNode';
 import NoteNode from './components/nodes/NoteNode';
+import ChatNode from './components/nodes/ChatNode';
 import ToolsSidebar from './components/Sidebar';
 import { Sidebar as AppSidebar } from '@/components/Sidebar';
 import { WorkspaceSidebar } from '@/components/WorkspaceSidebar';
-import { ImageIcon, Video, AlignLeft, Loader2, Cloud, CloudOff, Check, PanelLeft } from 'lucide-react';
+import { ImageIcon, Video, AlignLeft, Loader2, Cloud, CloudOff, Check, PanelLeft, MessageCircle } from 'lucide-react';
 import type { ImageNodeData, VideoNodeData, TextNodeData } from './types';
 import { useAutoSave, loadProject, createProject } from '@/lib/project';
 import { Folder as FolderType, Document as DocumentType, Project as ProjectType } from '@/lib/db/schema';
 
-const nodeTypes: NodeTypes = { image: ImageNode, video: VideoNode, text: TextNode, note: NoteNode };
+const nodeTypes: NodeTypes = {
+  image: ImageNode,
+  video: VideoNode,
+  text: TextNode,
+  note: NoteNode,
+  chat: ChatNode
+};
 
 let nodeId = 0;
 const getNodeId = (type: string) => `${type}-${++nodeId}`;
@@ -42,8 +49,9 @@ const getNodeId = (type: string) => `${type}-${++nodeId}`;
 const defaultData = {
   image: { label: 'Image', model: 'gemini-imagen', aspectRatio: '1:1' } as ImageNodeData,
   video: { label: 'Video', model: 'gemini-veo', duration: '4s' } as VideoNodeData,
-  text: { label: 'Prompt', model: 'gpt-4o', text: '' } as TextNodeData,
+  text: { label: 'Prompt', model: 'gemini-2.0-flash-lite', text: '' } as TextNodeData,
   note: { label: 'Note', noteId: '', title: '', content: '' } as any,
+  chat: { label: 'Assistant', model: 'gemini-2.0-flash-lite', messages: [] } as any,
 };
 
 interface MenuState { x: number; y: number; sourceId: string }
@@ -245,7 +253,7 @@ function GrainCanvas() {
     }
   }, []);
 
-  const createNode = useCallback((type: 'image' | 'video' | 'text') => {
+  const createNode = useCallback((type: 'image' | 'video' | 'text' | 'chat') => {
     if (!menu) return;
     const id = getNodeId(type);
     const pos = screenToFlowPosition({ x: menu.x, y: menu.y });
@@ -254,7 +262,7 @@ function GrainCanvas() {
     setMenu(null);
   }, [menu, screenToFlowPosition, setNodes, setEdges]);
 
-  const addNode = useCallback((type: 'image' | 'video' | 'text') => {
+  const addNode = useCallback((type: 'image' | 'video' | 'text' | 'chat') => {
     const id = getNodeId(type);
     setNodes(nds => [...nds, { id, type, position: { x: 300 + nds.length * 50, y: 200 + nds.length * 40 }, data: defaultData[type] }]);
   }, [setNodes]);
@@ -413,7 +421,7 @@ function GrainCanvas() {
               className="p-2 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl min-w-[180px]"
             >
               <p className="text-[10px] text-zinc-500 uppercase font-semibold tracking-wider px-2 py-1 mb-1">Add Node</p>
-              {(['text', 'image', 'video'] as const).map(type => (
+              {(['text', 'image', 'video', 'chat'] as const).map(type => (
                 <button
                   key={type}
                   onClick={() => createNode(type)}
@@ -422,7 +430,8 @@ function GrainCanvas() {
                   {type === 'text' && <AlignLeft className="w-4 h-4 text-green-400" />}
                   {type === 'image' && <ImageIcon className="w-4 h-4 text-purple-400" />}
                   {type === 'video' && <Video className="w-4 h-4 text-blue-400" />}
-                  {type === 'text' ? 'Text Prompt' : type === 'image' ? 'Image Gen' : 'Video Scene'}
+                  {type === 'chat' && <MessageCircle className="w-4 h-4 text-orange-400" />}
+                  {type === 'text' ? 'Text Prompt' : type === 'image' ? 'Image Gen' : type === 'video' ? 'Video Scene' : 'AI Chat'}
                 </button>
               ))}
             </div>,

@@ -19,11 +19,12 @@ import {
     HelpCircle,
     ImageIcon,
     Video,
-    AlignLeft
+    AlignLeft,
+    MessageCircle
 } from 'lucide-react';
 
 interface SidebarProps {
-    onAddNode: (type: 'image' | 'video' | 'text') => void;
+    onAddNode: (type: 'image' | 'video' | 'text' | 'chat') => void;
 }
 
 function Sidebar({ onAddNode }: SidebarProps) {
@@ -55,6 +56,10 @@ function Sidebar({ onAddNode }: SidebarProps) {
                             <DropdownMenuItem onSelect={() => onAddNode('text')} className="text-sm focus:bg-white/10 focus:text-white rounded-lg cursor-pointer py-2">
                                 <AlignLeft className="w-4 h-4 mr-2 text-green-400" />
                                 Text Prompt
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => onAddNode('chat')} className="text-sm focus:bg-white/10 focus:text-white rounded-lg cursor-pointer py-2">
+                                <MessageCircle className="w-4 h-4 mr-2 text-orange-400" />
+                                AI Chat
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>

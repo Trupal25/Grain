@@ -3,7 +3,7 @@
 import { memo, useState, useRef, useEffect } from 'react';
 import { Handle, Position, NodeProps, NodeToolbar, useReactFlow, NodeResizer } from '@xyflow/react';
 import { VideoNodeData, VIDEO_MODELS, DURATIONS } from '../../types';
-import { useConnectedPrompt, generateVideoAPI } from '@/lib/hooks';
+import { useNodeInputs, generateVideoAPI } from '@/lib/hooks';
 import { toast } from 'sonner';
 import {
     Select,
@@ -23,7 +23,7 @@ const MAX_HEIGHT = 270;
 function VideoNode({ id, data, selected }: NodeProps) {
     const nodeData = data as unknown as VideoNodeData;
     const { updateNodeData, deleteElements } = useReactFlow();
-    const { getPrompt } = useConnectedPrompt(id);
+    const { getInputs } = useNodeInputs(id);
 
     const [isPlaying, setIsPlaying] = useState(false);
     const videoRef = useRef<HTMLVideoElement>(null);
@@ -56,7 +56,8 @@ function VideoNode({ id, data, selected }: NodeProps) {
     };
 
     const handleGenerate = async () => {
-        const prompt = nodeData.prompt || getPrompt();
+        const inputs = getInputs();
+        const prompt = nodeData.prompt || inputs.combinedText;
 
         if (!prompt) {
             setError('Connect a Text node with a prompt');
