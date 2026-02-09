@@ -16,7 +16,8 @@ import {
     Activity,
     Shield,
     Globe,
-    Cpu
+    Cpu,
+    Layers
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -132,7 +133,7 @@ export default function HomePage() {
                     <h1 className="text-6xl md:text-9xl font-black tracking-[-0.08em] leading-[0.9] mb-16 flex flex-col items-center uppercase">
                         <span className="block italic">BEYOND</span>
                         <span className="text-zinc-600 block relative">
-                            LINEAR THINKING
+                            <span className="tracking-[-0.02em]">LINEAR</span> THINKING
                             <motion.div
                                 initial={{ width: "0%" }}
                                 animate={{ width: "100%" }}
@@ -149,17 +150,19 @@ export default function HomePage() {
 
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-10 mb-32">
                         <Link href="/sign-up">
-                            <Button size="lg" className="bg-blue-600 hover:bg-blue-500 text-white px-12 h-20 rounded-full text-[11px] font-bold tracking-[0.3em] uppercase group shadow-[0_20px_50px_rgba(37,99,235,0.2)] transition-all hover:scale-105 active:scale-95">
+                            <Button size="lg" className="bg-blue-600 hover:bg-blue-500 text-white px-10 h-16 rounded-full text-[11px] font-bold tracking-[0.3em] uppercase group shadow-[0_20px_50px_rgba(37,99,235,0.2)] transition-all hover:scale-105 active:scale-95">
                                 Start Exploring
                                 <ArrowRight className="ml-3 w-4 h-4 transition-transform group-hover:translate-x-1" />
                             </Button>
                         </Link>
-                        <Button variant="ghost" className="text-zinc-500 hover:text-white h-20 px-10 text-[11px] font-bold tracking-[0.3em] uppercase group">
-                            <div className="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center mr-4 group-hover:bg-white group-hover:text-black transition-all">
-                                <Play className="w-4 h-4 fill-current ml-1" />
-                            </div>
-                            See the Workflow
-                        </Button>
+                        <Link href="/sign-in">
+                            <Button variant="ghost" className="text-zinc-500 hover:text-white h-16 px-8 text-[11px] font-bold tracking-[0.3em] uppercase group">
+                                <div className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center mr-4 group-hover:bg-white group-hover:text-black transition-all">
+                                    <Play className="w-3 h-3 fill-current ml-0.5" />
+                                </div>
+                                See the Workflow
+                            </Button>
+                        </Link>
                     </div>
                 </motion.div>
 
@@ -185,7 +188,7 @@ export default function HomePage() {
                         {/* Image Showcase */}
                         <div className="aspect-[16/10] overflow-hidden">
                             <img
-                                src="/images/hero.png"
+                                src="/images/image.png"
                                 alt="System Interface"
                                 className="w-full h-full object-cover scale-100 group-hover:scale-105 transition-transform duration-[3s] ease-out"
                             />
