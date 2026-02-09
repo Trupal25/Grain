@@ -3,10 +3,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { db, schema } from '@/lib/db';
 import { ensureUserExists } from '@/lib/user';
-import { eq, and } from 'drizzle-orm';
-import { writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
-import { v4 as uuidv4 } from 'uuid';
+import { UTApi } from 'uploadthing/server';
+
+const utapi = new UTApi({
+    token: process.env.UPLOADTHING_TOKEN,
+});
 
 export async function POST(request: NextRequest) {
     try {
@@ -26,41 +27,20 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
         }
 
-        // Verify folder exists and belongs to user (if provided)
-        if (folderId) {
-            const parentFolder = await db.query.folders.findFirst({
-                where: and(
-                    eq(schema.folders.id, folderId),
-                    eq(schema.folders.userId, userId)
-                ),
-            });
-            if (!parentFolder) {
-                return NextResponse.json({ error: 'Folder not found' }, { status: 404 });
-            }
+        // Upload to UploadThing
+        const response = await utapi.uploadFiles([file]);
+
+        if (response[0].error) {
+            throw new Error(response[0].error.message);
         }
 
-        const buffer = Buffer.from(await file.arrayBuffer());
-        const filename = file.name.replace(/\s/g, '_');
-        const uniqueFilename = `${uuidv4()}-${filename}`;
-
-        // Ensure upload directory exists
-        const uploadDir = join(process.cwd(), 'public/uploads');
-        try {
-            await mkdir(uploadDir, { recursive: true });
-        } catch (error) {
-            // Ignore if directory already exists
-        }
-
-        const filePath = join(uploadDir, uniqueFilename);
-        await writeFile(filePath, buffer);
-
-        const fileUrl = `/uploads/${uniqueFilename}`;
+        const uploadedFile = response[0].data;
 
         // Create file record in database
         const [fileRecord] = await db.insert(schema.files).values({
             userId,
             name: file.name,
-            url: fileUrl,
+            url: uploadedFile.ufsUrl,
             size: file.size,
             type: file.type,
             folderId: folderId || null,

@@ -20,14 +20,15 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const { prompt, aspectRatio = '1:1' } = await request.json();
+        const { prompt, aspectRatio = '1:1', model = 'gemini-2.0-flash' } = await request.json();
 
         if (!prompt) {
             return NextResponse.json({ error: 'Prompt is required' }, { status: 400 });
         }
 
         // Generate image (returns base64 data URI)
-        const imageDataUri = await generateImage(prompt, aspectRatio);
+        console.log('[API/Image] Starting generation for user:', userId, 'Model:', model);
+        const imageDataUri = await generateImage(prompt, aspectRatio, model);
 
         // Convert base64 to buffer and upload to blob storage
         const { buffer, mimeType } = base64ToBuffer(imageDataUri);
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest) {
             credits: remainingCredits,
         });
     } catch (error) {
-        console.error('[Image Generation Error]', error);
+        console.error('[API/Image] Error:', error);
         return NextResponse.json(
             { error: error instanceof Error ? error.message : 'Failed to generate image' },
             { status: 500 }

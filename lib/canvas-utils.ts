@@ -1,7 +1,7 @@
 import { Node, Connection, Edge } from '@xyflow/react';
 
 export const MIN_WIDTH = {
-    image: 160,
+    image: 256,
     video: 160,
     text: 240,
     note: 240,
@@ -19,9 +19,9 @@ export const MAX_WIDTH = {
 };
 
 export const MIN_HEIGHT = {
-    image: 160,
+    image: 256,
     video: 90,
-    text: 120,
+    text: 80,
     note: 200,
     chat: 400,
     youtube: 140,

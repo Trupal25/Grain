@@ -215,3 +215,29 @@
 .react-flow__handle-right {
   right: -5px !important;
 }
+
+/* Custom Premium Scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(39, 39, 42, 0.5);
+  /* zinc-800 semi-transparent */
+  border-radius: 20px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(63, 63, 70, 0.8);
+  /* zinc-700 */
+}
+
+/* For Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(39, 39, 42, 0.5) transparent;
+}

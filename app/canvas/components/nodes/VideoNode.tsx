@@ -19,7 +19,7 @@ import { MIN_WIDTH, MAX_WIDTH, MIN_HEIGHT, MAX_HEIGHT } from '@/lib/canvas-utils
 
 function VideoNode({ id, data, selected }: NodeProps) {
     const nodeData = data as unknown as VideoNodeData;
-    const { updateNodeData, deleteElements } = useReactFlow();
+    const { updateNodeData, deleteElements, setNodes } = useReactFlow();
     const { getInputs } = useNodeInputs(id);
     const inputs = useMemo(() => getInputs(), [getInputs]);
 
@@ -54,10 +54,15 @@ function VideoNode({ id, data, selected }: NodeProps) {
     };
 
     const handleGenerate = async () => {
-        const prompt = nodeData.prompt || inputs.combinedText;
+        // Refresh inputs to ensure we have the latest data
+        const currentInputs = getInputs();
+        console.log('[VideoNode] Inputs refresh:', currentInputs);
+
+        const prompt = nodeData.prompt || currentInputs.combinedText;
 
         if (!prompt) {
             setError('Connect a Text node with a prompt');
+            console.error('[VideoNode] Missing prompt. Inputs:', currentInputs);
             updateNodeData(id, { workflowStatus: 'error' });
             return;
         }
@@ -66,10 +71,30 @@ function VideoNode({ id, data, selected }: NodeProps) {
         updateNodeData(id, { isGenerating: true });
 
         try {
-            const { videoUrl } = await generateVideoAPI(prompt, nodeData.duration, inputs.images);
+            console.log('[VideoNode] Generating video with:', { prompt, duration: nodeData.duration, model: nodeData.model, images: currentInputs.images });
+            const { videoUrl } = await generateVideoAPI(prompt, nodeData.duration, currentInputs.images, nodeData.model);
+            console.log('[VideoNode] Generation successful');
             updateNodeData(id, { videoUrl, isGenerating: false, workflowStatus: 'completed' });
+
+            // Resize to 400x225 (16:9)
+            const targetWidth = 400;
+            const targetHeight = 225;
+
+            setNodes((nds) => nds.map((node) => {
+                if (node.id === id) {
+                    return {
+                        ...node,
+                        style: { ...node.style, width: targetWidth, height: targetHeight },
+                        width: targetWidth,
+                        height: targetHeight,
+                    };
+                }
+                return node;
+            }));
+
             toast.success('Video generated');
         } catch (err) {
+            console.error('[VideoNode] Generation failed:', err);
             setError(err instanceof Error ? err.message : 'Generation failed');
             updateNodeData(id, { isGenerating: false, workflowStatus: 'error' });
             toast.error('Failed to generate video');
@@ -170,14 +195,48 @@ function VideoNode({ id, data, selected }: NodeProps) {
             >
                 {nodeData.videoUrl ? (
                     <div className="relative w-full h-full group/video">
-                        <video ref={videoRef} src={nodeData.videoUrl} poster={nodeData.thumbnailUrl} className="w-full h-full object-cover" loop onEnded={() => setIsPlaying(false)} />
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/video:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                            <button onClick={togglePlay} className="w-8 h-8 rounded-full bg-white/10 border border-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/20">
-                                {isPlaying ? <Pause className="w-3.5 h-3.5 fill-current" /> : <Play className="w-3.5 h-3.5 fill-current ml-0.5" />}
+                        <video
+                            key={nodeData.videoUrl}
+                            ref={videoRef}
+                            poster={nodeData.thumbnailUrl}
+                            className="w-full h-full object-cover shadow-inner"
+                            loop
+                            muted
+                            playsInline
+                            controls
+                            crossOrigin="anonymous"
+                            onEnded={() => setIsPlaying(false)}
+                            onError={(e) => {
+                                const video = e.currentTarget;
+                                const err = video.error;
+                                console.error('[VideoNode] Video loading error:', {
+                                    code: err?.code,
+                                    message: err?.message,
+                                    src: nodeData.videoUrl,
+                                    currentSrc: video.currentSrc
+                                });
+
+                                let msg = 'Failed to load video';
+                                if (err?.code === 1) msg = 'Loading aborted';
+                                if (err?.code === 2) msg = 'Network error';
+                                if (err?.code === 3) msg = 'Decoding failed (Codec issue?)';
+                                if (err?.code === 4) msg = 'Format not supported';
+
+                                setError(msg);
+                            }}
+                        >
+                            <source src={nodeData.videoUrl} type="video/mp4" />
+                            <source src={nodeData.videoUrl} type="video/webm" />
+                        </video>
+                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover/video:opacity-100 transition-opacity flex items-center justify-center">
+                            <button onClick={togglePlay} className="w-12 h-12 rounded-full bg-black/40 border border-white/10 backdrop-blur-md flex items-center justify-center text-white hover:bg-black/60 hover:scale-110 transition-all active:scale-95 shadow-2xl">
+                                {isPlaying ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 fill-current ml-1" />}
                             </button>
-                            <button onClick={handleDownload} className="w-8 h-8 rounded-full bg-white/10 border border-white/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/20">
-                                <Download className="w-3.5 h-3.5" />
-                            </button>
+                        </div>
+                        <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover/video:opacity-100 transition-opacity pointer-events-auto">
+                            <Button size="icon" variant="secondary" className="h-5 w-5 rounded-full bg-black/50 backdrop-blur text-white hover:bg-black/70 border-0" onClick={handleDownload}>
+                                <Download className="w-2.5 h-2.5" />
+                            </Button>
                         </div>
                         <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-md text-[8px] font-medium text-white/90">{nodeData.duration}</div>
                     </div>

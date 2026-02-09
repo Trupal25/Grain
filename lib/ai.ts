@@ -11,14 +11,18 @@ export const ai = apiKey ? new GoogleGenAI({ apiKey }) : null;
 
 // Map simple model names to versioned ones for the v1beta API
 const MODEL_ALIASES: Record<string, string> = {
-    'gemini-1.5-pro': 'gemini-2.5-pro',
-    'gemini-1.5-flash': 'gemini-2.0-flash-lite',
+    'gemini-1.5-pro': 'gemini-1.5-pro',
+    'gemini-1.5-flash': 'gemini-1.5-flash',
     'gemini-2.0-flash': 'gemini-2.0-flash',
     'gemini-2.0-flash-lite': 'gemini-2.0-flash-lite',
-    'gemini-2.5-pro': 'gemini-2.5-pro',
-    'gemini-2.5-flash': 'gemini-2.5-flash',
-    'gpt-4o': 'gemini-2.0-flash-lite',
-    'claude-3-opus': 'gemini-2.5-pro',
+    'gemini-2.5-pro': 'gemini-2.5-pro-preview-02-04-2025',
+    'gemini-2.5-flash': 'gemini-2.5-flash-preview-02-04-2025',
+    'gemini-2.5-flash-native-audio': 'gemini-2.5-flash-native-audio-latest',
+    'imagen-3': 'imagen-3.0-generate-001',
+    'imagen-3-fast': 'imagen-3.0-fast-generate-001',
+    'veo-2': 'veo-2.0-generate-001',
+    'veo-3': 'veo-3.0-generate-001',
+    'veo-3-fast': 'veo-3.0-fast-generate-001',
 };
 
 function getModelName(model: string) {
@@ -38,20 +42,27 @@ export async function generateText(prompt: string, model = 'gemini-2.0-flash-lit
 }
 
 // Helper to fetch and convert image URL to base64
-async function urlToBase64(url: string) {
+async function urlToData(url: string) {
     try {
+        console.log('[AI Lib] Fetching image for base64:', url);
         const response = await fetch(url);
+        if (!response.ok) throw new Error(`Fetch failed: ${response.status} ${response.statusText}`);
+
         const buffer = await response.arrayBuffer();
         const base64 = Buffer.from(buffer).toString('base64');
-        const contentType = response.headers.get('content-type') || 'image/png';
+        let contentType = response.headers.get('content-type') || 'image/png';
+
+        // Strip charset or other parameters
+        contentType = contentType.split(';')[0].trim();
+
+        console.log('[AI Lib] Fetched image successfully:', { mimeType: contentType, length: base64.length });
+
         return {
-            inlineData: {
-                data: base64,
-                mimeType: contentType
-            }
+            data: base64,
+            mimeType: contentType
         };
     } catch (e) {
-        console.error('Failed to convert image to base64:', e);
+        console.error('[AI Lib] urlToData failed:', e);
         return null;
     }
 }
@@ -79,8 +90,15 @@ export async function generateChat(
             // Process image attachments
             for (const url of attachments) {
                 if (url.match(/\.(jpg|jpeg|png|webp|gif)$|^data:image/i)) {
-                    const imgPart = await urlToBase64(url);
-                    if (imgPart) parts.push(imgPart);
+                    const imgData = await urlToData(url);
+                    if (imgData) {
+                        parts.push({
+                            inlineData: {
+                                data: imgData.data,
+                                mimeType: imgData.mimeType
+                            }
+                        });
+                    }
                 }
             }
         }
@@ -100,12 +118,22 @@ export async function generateChat(
 }
 
 // Image generation using Gemini with native image output
-export async function generateImage(prompt: string, aspectRatio = '1:1') {
+export async function generateImage(prompt: string, aspectRatio = '1:1', model = 'imagen-3') {
     if (!ai) throw new Error('AI client not initialized - set GEMINI_API_KEY');
 
-    // Use Gemini 2.0 Flash with image generation capability
+    const targetModel = model.startsWith('gemini') ? 'gemini-2.0-flash-exp-image-generation' : getModelName(model);
+
+    // Use Gemini 2.0 Flash or Imagen based on model selection
+    if (targetModel.includes('imagen')) {
+        // For Imagen 3 models, typically used via Vertex AI, but here we attempt to use the model name
+        // directly if supported by the public API, otherwise fall back or warn.
+        // For now, we will pass the model name through.
+    }
+
+    console.log('[AI Lib] Generating image with model:', targetModel);
+    console.log('[AI Lib] Prompt:', prompt);
     const response = await ai.models.generateContent({
-        model: 'gemini-2.0-flash-exp-image-generation',
+        model: targetModel,
         contents: `Generate an image: ${prompt}. Aspect ratio: ${aspectRatio}`,
         config: {
             responseModalities: [Modality.TEXT, Modality.IMAGE],
@@ -126,29 +154,51 @@ export async function generateImage(prompt: string, aspectRatio = '1:1') {
 }
 
 // Video generation using Veo
-export async function generateVideo(prompt: string, durationSeconds = 4, images: string[] = []) {
+export async function generateVideo(prompt: string, durationSeconds = 5, images: string[] = [], model = 'veo-2') {
     if (!ai) throw new Error('AI client not initialized - set GEMINI_API_KEY');
 
     // Prepare image reference if available
     let inputImage: any = undefined;
     if (images.length > 0) {
-        // Use the first image as a reference for Veo
-        const imgPart = await urlToBase64(images[0]);
-        if (imgPart) {
-            inputImage = imgPart;
+        const imgData = await urlToData(images[0]);
+        if (imgData) {
+            // Provide redundant keys to handle potential SDK/backend shim issues
+            // The error says "bytesBase64Encoded" is required in the underlying struct
+            inputImage = {
+                imageBytes: imgData.data,
+                bytesBase64Encoded: imgData.data,
+                data: imgData.data,
+                mimeType: imgData.mimeType
+            };
+            console.log('[AI Lib] Video input image prepared with redundant keys');
         }
     }
 
     // Start video generation
-    let operation = await ai.models.generateVideos({
-        model: 'veo-2.0-generate-001',
-        prompt,
-        ...(inputImage && { image: inputImage }),
-        config: {
-            durationSeconds,
-            aspectRatio: '16:9',
-        },
-    });
+    console.log('[AI Lib] Generating video with model:', getModelName(model));
+    console.log('[AI Lib] Prompt:', prompt);
+    let operation;
+
+    if (inputImage) {
+        operation = await ai.models.generateVideos({
+            model: getModelName(model),
+            prompt,
+            image: inputImage,
+            config: {
+                durationSeconds,
+                aspectRatio: '16:9',
+            },
+        });
+    } else {
+        operation = await ai.models.generateVideos({
+            model: getModelName(model),
+            prompt,
+            config: {
+                durationSeconds,
+                aspectRatio: '16:9',
+            },
+        });
+    }
 
     // Poll for completion
     while (!operation.done) {
@@ -156,12 +206,21 @@ export async function generateVideo(prompt: string, durationSeconds = 4, images:
         operation = await ai.operations.get({ operation: operation });
     }
 
-    const video = operation.response?.generatedVideos?.[0];
+    const video = (operation.response as any)?.generatedVideos?.[0];
     if (!video?.video?.uri) {
         throw new Error('No video generated');
     }
 
-    return video.video.uri;
+    const uri = video.video.uri;
+    console.log('[AI Lib] Video generated at URI:', uri);
+
+    // If it's a Google API URL and we have an API key, append it for fetching
+    if (uri.includes('googleapis.com') && apiKey && !uri.includes('key=')) {
+        const separator = uri.includes('?') ? '&' : '?';
+        return `${uri}${separator}key=${apiKey}`;
+    }
+
+    return uri;
 }
 
 // Enhance prompt using Gemini

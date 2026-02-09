@@ -43,6 +43,7 @@ import {
     BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
 import { CreateItemModal } from '@/components/CreateItemModal';
+import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { useRef } from 'react';
 import type { Folder as FolderType, Project, Document, Link, File as FileType } from '@/lib/db/schema';
@@ -606,6 +607,8 @@ export default function DashboardPage() {
                 toggleFolderExpand={toggleFolderExpand}
                 isTrashView={isTrashView}
                 isStarredView={isStarredView}
+                activeItemId={currentFolderId}
+                activeItemType="folder"
                 onRefresh={() => { fetchFolderContents(currentFolderId); fetchTree(); }}
             />
 
@@ -665,10 +668,10 @@ export default function DashboardPage() {
                 <div className="flex-1 overflow-y-auto">
                     <div className="max-w-5xl mx-auto py-6 px-6">
                         {/* Search Bar */}
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="px-3 py-1.5 bg-zinc-800 rounded-lg text-sm text-white flex items-center gap-2">
-                                <Home className="w-4 h-4 text-zinc-400" />
-                                {currentFolder.name}
+                        <div className="flex items-center gap-4 mb-2">
+                            <div className="flex items-center gap-2 px-3.5 py-1.5 bg-zinc-900 border border-zinc-800 rounded-full text-sm text-zinc-300 shadow-lg">
+                                <Home className="w-4 h-4 text-zinc-500" />
+                                <span className="font-medium">{currentFolder.name}</span>
                             </div>
                             <div className="relative flex-1">
                                 <Input
@@ -676,16 +679,17 @@ export default function DashboardPage() {
                                     placeholder="Search anything..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="bg-transparent border-none text-lg placeholder:text-zinc-600 focus-visible:ring-0 h-10"
+                                    className="bg-transparent border-none !text-2xl md:!text-4xl font-light placeholder:text-zinc-700 focus-visible:ring-0 h-16 w-full px-0"
                                 />
                             </div>
                         </div>
+                        <Separator className="mb-10 bg-zinc-800/50" />
 
                         {/* Quick Create Buttons */}
                         <div className="flex items-center justify-center gap-3 mb-6">
                             <button
                                 onClick={() => setNoteModalOpen(true)}
-                                className="p-2 hover:bg-zinc-800 rounded-lg text-zinc-400 hover:text-white transition-colors"
+                                className="p-2 hover:bg-zinc-800 rounded-full text-zinc-400 hover:text-white transition-colors"
                             >
                                 <Plus className="w-5 h-5" />
                             </button>

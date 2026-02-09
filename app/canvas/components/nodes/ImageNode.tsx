@@ -95,10 +95,15 @@ function ImageNode({ id, data, selected, width, height }: NodeProps) {
     }, [label, id, updateNodeData]);
 
     const handleGenerate = async () => {
-        const prompt = nodeData.prompt || inputs.combinedText;
+        // Refresh inputs to ensure we have the latest data
+        const currentInputs = getInputs();
+        console.log('[ImageNode] Inputs refresh:', currentInputs);
+
+        const prompt = nodeData.prompt || currentInputs.combinedText;
 
         if (!prompt) {
             setError('Connect a Text node with a prompt');
+            console.error('[ImageNode] Missing prompt. Inputs:', currentInputs);
             updateNodeData(id, { workflowStatus: 'error' });
             return;
         }
@@ -107,10 +112,31 @@ function ImageNode({ id, data, selected, width, height }: NodeProps) {
         updateNodeData(id, { isGenerating: true });
 
         try {
-            const { imageUrl } = await generateImageAPI(prompt, nodeData.aspectRatio);
+            console.log('[ImageNode] Generating image with:', { prompt, ratio: nodeData.aspectRatio, model: nodeData.model });
+            const { imageUrl } = await generateImageAPI(prompt, nodeData.aspectRatio, nodeData.model);
+            console.log('[ImageNode] Generation successful');
             updateNodeData(id, { imageUrl, isGenerating: false, workflowStatus: 'completed' });
+
+            // Resize node to be larger (400px width)
+            const targetWidth = 400;
+            const [w, h] = (nodeData.aspectRatio || '1:1').split(':').map(Number);
+            const targetHeight = targetWidth / (w / h);
+
+            setNodes((nds) => nds.map((node) => {
+                if (node.id === id) {
+                    return {
+                        ...node,
+                        style: { ...node.style, width: targetWidth, height: targetHeight },
+                        width: targetWidth,
+                        height: targetHeight,
+                    };
+                }
+                return node;
+            }));
+
             toast.success('Image generated');
         } catch (err) {
+            console.error('[ImageNode] Generation failed:', err);
             setError(err instanceof Error ? err.message : 'Generation failed');
             updateNodeData(id, { isGenerating: false, workflowStatus: 'error' });
             toast.error('Failed to generate image');
@@ -218,13 +244,13 @@ function ImageNode({ id, data, selected, width, height }: NodeProps) {
             >
                 {nodeData.imageUrl ? (
                     <div className="w-full h-full relative group/image">
-                        <img src={nodeData.imageUrl} alt="Generated" className="w-full h-full object-cover nodrag" />
-                        <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover/image:opacity-100 transition-opacity">
-                            <Button size="icon" variant="secondary" className="h-6 w-6 rounded-full bg-black/50 backdrop-blur text-white hover:bg-black/70" onClick={handleDownload}>
-                                <Download className="w-3 h-3" />
+                        <img src={nodeData.imageUrl} alt="Generated" className="w-full h-full object-cover nodrag pointer-events-none" />
+                        <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover/image:opacity-100 transition-opacity pointer-events-auto">
+                            <Button size="icon" variant="secondary" className="h-5 w-5 rounded-full bg-black/50 backdrop-blur text-white hover:bg-black/70" onClick={handleDownload}>
+                                <Download className="w-2.5 h-2.5" />
                             </Button>
-                            <Button size="icon" variant="secondary" className="h-6 w-6 rounded-full bg-black/50 backdrop-blur text-white hover:bg-black/70">
-                                <Maximize2 className="w-3 h-3" />
+                            <Button size="icon" variant="secondary" className="h-5 w-5 rounded-full bg-black/50 backdrop-blur text-white hover:bg-black/70">
+                                <Maximize2 className="w-2.5 h-2.5" />
                             </Button>
                         </div>
                     </div>

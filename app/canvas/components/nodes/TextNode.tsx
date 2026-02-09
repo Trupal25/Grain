@@ -40,12 +40,14 @@ function TextNode({ id, data, selected }: NodeProps) {
         if (!text.trim()) return;
 
         setIsEnhancing(true);
+        console.log('[TextNode] Enhancing prompt:', text);
         try {
             const { text: enhanced } = await enhancePromptAPI(text, 'image');
+            console.log('[TextNode] Enhanced result:', enhanced);
             setText(enhanced);
             toast.success('Prompt enhanced');
         } catch (err) {
-            console.error('Failed to enhance prompt:', err);
+            console.error('[TextNode] Failed to enhance prompt:', err);
             toast.error('Failed to enhance prompt');
         }
         setIsEnhancing(false);
@@ -73,29 +75,25 @@ function TextNode({ id, data, selected }: NodeProps) {
 
             {/* Node Body */}
             <div
-                className={`w-full h-full min-w-[180px] min-h-[80px] overflow-hidden flex flex-col bg-[#0A0A0A] border transition-all duration-300 rounded-[16px] ${selected ? 'border-zinc-500/50 ring-1 ring-zinc-700/50' : 'border-white/5 hover:border-white/10'}`}
+                className={`w-full h-full min-w-[180px] min-h-[40px] overflow-hidden flex flex-col bg-[#0A0A0A] border transition-all duration-300 rounded-[8px] group ${selected ? 'border-zinc-500/50 ring-1 ring-zinc-700/50' : 'border-white/5 hover:border-white/10'}`}
             >
-                {/* Header */}
-                <div className="flex items-center justify-between px-3 py-2 border-b border-white/5 bg-white/[0.02] shrink-0">
-                    <div className="flex items-center gap-2 flex-1">
-                        <AlignLeft className="w-3 h-3 text-zinc-500" />
-                        <input value={label} onChange={(e) => setLabel(e.target.value)} className="bg-transparent text-[10px] font-semibold text-zinc-400 tracking-wide uppercase focus:outline-none focus:text-white w-full" placeholder="LABEL" />
-                    </div>
-                    <span className="text-[9px] font-mono text-zinc-600 bg-white/5 px-1.5 py-0.5 rounded ml-2">{(nodeData.model || 'GPT-4o').toUpperCase()}</span>
-                </div>
-                {/* Content */}
-                <div className="flex-1 p-3 overflow-hidden">
+                {/* Drag Handle Area */}
+                <div className="h-2 w-full bg-white/5 cursor-grab active:cursor-grabbing hover:bg-white/10 transition-colors" />
+
+                <div className="flex-1 relative overflow-hidden">
                     <textarea
                         value={text}
                         onChange={(e) => setText(e.target.value)}
-                        placeholder="Write your prompt..."
-                        className="w-full h-full bg-transparent text-[12px] leading-relaxed text-zinc-300 placeholder:text-zinc-700 resize-none focus:outline-none"
+                        placeholder="Write prompt..."
+                        className="absolute inset-0 w-full h-full bg-transparent text-[11px] leading-snug text-zinc-300 placeholder:text-zinc-700 resize-none focus:outline-none p-2 font-mono nodrag nowheel overflow-y-auto outline-none transition-all scrollbar-auto"
                         spellCheck={false}
                     />
-                </div>
-                {/* Character count */}
-                <div className="px-3 pb-2 shrink-0">
-                    <span className="text-[9px] text-zinc-600">{text.length} chars</span>
+                    {/* Hover actions overlay */}
+                    <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                        <button onClick={handleCopy} className="p-1 hover:bg-white/10 rounded text-zinc-500 hover:text-zinc-300">
+                            {copied ? <Check className="w-2.5 h-2.5 text-green-400" /> : <Copy className="w-2.5 h-2.5" />}
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -103,30 +101,32 @@ function TextNode({ id, data, selected }: NodeProps) {
             <NodeToolbar isVisible={selected || isHovered} position={Position.Bottom} offset={10} align="center">
                 <div className="flex items-center gap-1 p-1 bg-[#1A1A1A]/90 backdrop-blur-md border border-white/10 rounded-full shadow-2xl" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
                     <Select value={nodeData.model} onValueChange={(v) => updateNodeData(id, { model: v })}>
-                        <SelectTrigger className="h-6 border-0 bg-transparent text-[9px] text-zinc-300 w-[80px] focus:ring-0 hover:bg-white/5 rounded-full"><SelectValue placeholder="Model" /></SelectTrigger>
-                        <SelectContent className="bg-[#1A1A1A] border-zinc-800 text-zinc-300 z-50">{TEXT_MODELS.map(m => <SelectItem key={m.value} value={m.value} className="text-[9px]">{m.label}</SelectItem>)}</SelectContent>
+                        <SelectTrigger className="h-5 border-0 bg-transparent text-[9px] text-zinc-400 w-[60px] focus:ring-0 hover:bg-white/5 rounded-full px-1"><SelectValue placeholder="Model" /></SelectTrigger>
+                        <SelectContent className="bg-[#1A1A1A] border-zinc-800 text-zinc-300 z-50">{TEXT_MODELS.map(m => <SelectItem key={m.value} value={m.value} className="text-[9px]">{m.label.replace('Gemini ', '').replace(' Flash', '')}</SelectItem>)}</SelectContent>
                     </Select>
                     <div className="w-px h-3 bg-white/10" />
                     <Button
                         size="icon"
                         variant="ghost"
-                        className="h-6 w-6 rounded-full text-zinc-400 hover:text-white hover:bg-white/5"
-                        onClick={handleCopy}
-                    >
-                        {copied ? <Check className="w-2.5 h-2.5 text-green-400" /> : <Copy className="w-2.5 h-2.5" />}
-                    </Button>
-                    <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-6 w-6 rounded-full text-zinc-400 hover:text-zinc-300 hover:bg-white/10 disabled:opacity-50"
+                        className="h-5 w-5 rounded-full text-zinc-400 hover:text-zinc-300 hover:bg-white/10 disabled:opacity-50"
                         onClick={handleEnhance}
                         disabled={isEnhancing || !text.trim()}
-                        title="Enhance prompt with AI"
+                        title="Enhance"
                     >
                         {isEnhancing ? <RefreshCw className="w-2.5 h-2.5 animate-spin" /> : <Sparkles className="w-2.5 h-2.5" />}
                     </Button>
                     <div className="w-px h-3 bg-white/10" />
-                    <Button size="icon" variant="ghost" className="h-6 w-6 rounded-full text-red-400/80 hover:text-red-400 hover:bg-red-500/10" onClick={() => deleteElements({ nodes: [{ id }] })}><Trash2 className="w-2.5 h-2.5" /></Button>
+                    <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-6 w-6 rounded-full text-red-400/80 hover:text-red-400 hover:bg-red-500/10"
+                        onClick={() => {
+                            console.log('[TextNode] Deleting node:', id);
+                            deleteElements({ nodes: [{ id }] });
+                        }}
+                    >
+                        <Trash2 className="w-3 h-3" />
+                    </Button>
                 </div>
             </NodeToolbar>
 

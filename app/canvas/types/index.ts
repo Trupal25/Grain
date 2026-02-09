@@ -16,20 +16,14 @@ export interface ImageNodeData extends BaseNodeData {
 }
 
 export type ImageModel =
-    | 'gemini-imagen'
-    | 'midjourney'
-    | 'dalle-3'
-    | 'stable-diffusion-xl'
-    | 'flux-pro'
-    | 'ideogram';
+    | 'gemini-2.0-flash'
+    | 'imagen-3'
+    | 'imagen-3-fast';
 
 export const IMAGE_MODELS: { value: ImageModel; label: string }[] = [
-    { value: 'gemini-imagen', label: 'Gemini Imagen' },
-    { value: 'midjourney', label: 'Midjourney' },
-    { value: 'dalle-3', label: 'DALL-E 3' },
-    { value: 'stable-diffusion-xl', label: 'Stable Diffusion XL' },
-    { value: 'flux-pro', label: 'Flux Pro' },
-    { value: 'ideogram', label: 'Ideogram' },
+    { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash' },
+    { value: 'imagen-3', label: 'Imagen 3' },
+    { value: 'imagen-3-fast', label: 'Imagen 3 Fast' },
 ];
 
 /* Video Node */
@@ -38,7 +32,7 @@ export interface VideoNodeData extends BaseNodeData {
     thumbnailUrl?: string;
     prompt?: string;
     model: VideoModel;
-    duration: '4s' | '8s' | '16s';
+    duration: '5s' | '6s' | '8s';
     isGenerating?: boolean;
     isPlaying?: boolean;
     width?: number;
@@ -46,20 +40,14 @@ export interface VideoNodeData extends BaseNodeData {
 }
 
 export type VideoModel =
-    | 'gemini-veo'
-    | 'runway-gen3'
-    | 'pika-labs'
-    | 'sora'
-    | 'kling'
-    | 'luma-dream-machine';
+    | 'veo-2'
+    | 'veo-3'
+    | 'veo-3-fast';
 
 export const VIDEO_MODELS: { value: VideoModel; label: string }[] = [
-    { value: 'gemini-veo', label: 'Gemini Veo' },
-    { value: 'runway-gen3', label: 'Runway Gen-3' },
-    { value: 'pika-labs', label: 'Pika Labs' },
-    { value: 'sora', label: 'Sora' },
-    { value: 'kling', label: 'Kling AI' },
-    { value: 'luma-dream-machine', label: 'Luma Dream Machine' },
+    { value: 'veo-2', label: 'Veo 2' },
+    { value: 'veo-3', label: 'Veo 3' },
+    { value: 'veo-3-fast', label: 'Veo 3 Fast' },
 ];
 
 /* Text Node */
@@ -93,9 +81,9 @@ export const ASPECT_RATIOS = [
 ] as const;
 
 export const DURATIONS = [
-    { value: '4s', label: '4 seconds' },
+    { value: '5s', label: '5 seconds' },
+    { value: '6s', label: '6 seconds' },
     { value: '8s', label: '8 seconds' },
-    { value: '16s', label: '16 seconds' },
 ] as const;
 
 /* Note Node */

@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { useReactFlow, type Node, type Edge } from '@xyflow/react';
-import type { TextNodeData } from '@/app/types';
+
 
 /**
  * Hook to find all inputs from connected nodes (text, images, videos, etc.)
@@ -28,8 +28,12 @@ export function useNodeInputs(nodeId: string) {
             const data = n.data as any;
 
             // Extract text/prompts
-            if (n.type === 'text' && data.text) {
-                texts.push(data.text);
+            if (n.type === 'text') {
+                if (data.text) {
+                    texts.push(data.text);
+                } else {
+                    console.warn(`[useNodeInputs] Text node ${n.id} has no text content`, data);
+                }
             } else if (n.type === 'note' && data.content) {
                 texts.push(data.content);
             } else if (n.type === 'chat' && data.messages?.length > 0) {
@@ -69,37 +73,46 @@ export function useNodeInputs(nodeId: string) {
 /**
  * API call helpers
  */
-export async function generateImageAPI(prompt: string, aspectRatio: string) {
+export async function generateImageAPI(prompt: string, aspectRatio: string, model?: string) {
+    console.log('[API] Generating Image:', { prompt, aspectRatio, model });
     const res = await fetch('/api/generate/image', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, aspectRatio }),
+        body: JSON.stringify({ prompt, aspectRatio, model }),
     });
 
     if (!res.ok) {
         const error = await res.json();
+        console.error('[API] Image Generation Failed:', error);
         throw new Error(error.error || 'Failed to generate image');
     }
 
-    return res.json() as Promise<{ imageUrl: string }>;
+    const data = await res.json() as { imageUrl: string };
+    console.log('[API] Image Generated Successfully');
+    return data;
 }
 
-export async function generateVideoAPI(prompt: string, duration: string, images: string[] = []) {
+export async function generateVideoAPI(prompt: string, duration: string, images: string[] = [], model?: string) {
+    console.log('[API] Generating Video:', { prompt, duration, imagesCount: images.length, model });
     const res = await fetch('/api/generate/video', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, duration, images }),
+        body: JSON.stringify({ prompt, duration, images, model }),
     });
 
     if (!res.ok) {
         const error = await res.json();
+        console.error('[API] Video Generation Failed:', error);
         throw new Error(error.error || 'Failed to generate video');
     }
 
-    return res.json() as Promise<{ videoUrl: string }>;
+    const data = await res.json() as { videoUrl: string };
+    console.log('[API] Video Generated Successfully');
+    return data;
 }
 
 export async function enhancePromptAPI(prompt: string, type: 'image' | 'video') {
+    console.log('[API] Enhancing Prompt:', { prompt, type });
     const res = await fetch('/api/generate/text', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -108,8 +121,11 @@ export async function enhancePromptAPI(prompt: string, type: 'image' | 'video') 
 
     if (!res.ok) {
         const error = await res.json();
+        console.error('[API] Enhance Prompt Failed:', error);
         throw new Error(error.error || 'Failed to enhance prompt');
     }
 
-    return res.json() as Promise<{ text: string }>;
+    const data = await res.json() as { text: string };
+    console.log('[API] Prompt Enhanced:', data);
+    return data;
 }

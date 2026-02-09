@@ -51,8 +51,8 @@ let nodeId = 0;
 const getNodeId = (type: string) => `${type}-${++nodeId}-${Math.random().toString(36).substr(2, 4)}`;
 
 const defaultData = {
-  image: { label: 'Image', model: 'gemini-imagen', aspectRatio: '1:1' } as ImageNodeData,
-  video: { label: 'Video', model: 'gemini-veo', duration: '4s' } as VideoNodeData,
+  image: { label: 'Image', model: 'gemini-2.0-flash', aspectRatio: '1:1' } as ImageNodeData,
+  video: { label: 'Video', model: 'veo-2', duration: '5s' } as VideoNodeData,
   text: { label: 'Prompt', model: 'gemini-2.0-flash-lite', text: '' } as TextNodeData,
   note: { label: 'Note', noteId: '', title: '', content: '' } as any,
   chat: { label: 'Assistant', model: 'gemini-2.0-flash-lite', messages: [] } as any,
@@ -364,7 +364,19 @@ function GrainCanvas() {
     if (!menu) return;
     const id = getNodeId(type);
     const pos = screenToFlowPosition({ x: menu.x, y: menu.y });
-    setNodes(nds => [...nds, { id, type, position: { x: pos.x - 120, y: pos.y - 80 }, data: defaultData[type] }]);
+
+    const width = type === 'image' ? 256 : type === 'video' ? 320 : type === 'text' ? 240 : type === 'chat' ? 320 : type === 'youtube' ? 320 : 200;
+    const height = type === 'image' ? 256 : type === 'video' ? 180 : type === 'text' ? 120 : type === 'chat' ? 400 : type === 'youtube' ? 180 : 100;
+
+    setNodes(nds => [...nds, {
+      id,
+      type,
+      position: { x: pos.x - 120, y: pos.y - 80 },
+      data: defaultData[type],
+      width,
+      height,
+      style: { width, height },
+    }]);
     setEdges(eds => [...eds, { id: `e-${menu.sourceId}-${id}`, source: menu.sourceId, target: id }]);
     setMenu(null);
   }, [menu, screenToFlowPosition, setNodes, setEdges]);
@@ -380,7 +392,13 @@ function GrainCanvas() {
       id,
       type,
       position: { x: pos.x - 200, y: pos.y - 200 },
-      data: defaultData[type]
+      data: defaultData[type],
+      width: type === 'image' ? 256 : type === 'video' ? 320 : 200,
+      height: type === 'image' ? 256 : type === 'video' ? 180 : 100,
+      style: {
+        width: type === 'image' ? 256 : type === 'video' ? 320 : undefined,
+        height: type === 'image' ? 256 : type === 'video' ? 180 : undefined
+      }
     }]);
   }, [setNodes, screenToFlowPosition]);
 
@@ -466,6 +484,9 @@ function GrainCanvas() {
             onNavigateHome={() => router.push('/dashboard')}
             onNavigateFavorites={() => router.push('/dashboard?view=favorites')}
             onNavigateTrash={() => router.push('/dashboard?view=trash')}
+            isStarredView={false}
+            activeItemId={projectId}
+            activeItemType="project"
             expandedFolders={expandedFolders}
             toggleFolderExpand={toggleFolderExpand}
             onRefresh={fetchTree}

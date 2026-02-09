@@ -314,8 +314,12 @@ export default function DocumentPage() {
                 onNavigateHome={() => router.push('/dashboard')}
                 onNavigateFavorites={() => router.push('/dashboard?view=favorites')}
                 onNavigateTrash={() => router.push('/dashboard?view=trash')}
+                isStarredView={false}
+                activeItemId={documentId}
+                activeItemType="document"
                 expandedFolders={expandedFolders}
                 toggleFolderExpand={toggleFolderExpand}
+                onRefresh={fetchTree}
             />
             <div className="flex-1 flex flex-col w-full h-full overflow-hidden">
                 {/* Header */}

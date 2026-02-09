@@ -5,8 +5,8 @@ const nextConfig: NextConfig = {
   reactStrictMode: false,
   images: {
     remotePatterns: [
-      // Vercel Blob storage
-      { protocol: 'https', hostname: '*.public.blob.vercel-storage.com' },
+      // UploadThing
+      { protocol: 'https', hostname: 'utfs.io' },
       // Google profile pictures
       { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
       // Clerk avatars
