@@ -5,6 +5,7 @@ import { Handle, Position, NodeProps, NodeToolbar, useReactFlow, NodeResizer } f
 import { YoutubeNodeData } from '../../types';
 import { Button } from '@/components/ui/button';
 import { Youtube, Trash2, ExternalLink, Play } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 import { getYoutubeId, MIN_WIDTH, MAX_WIDTH, MIN_HEIGHT, MAX_HEIGHT } from '@/lib/canvas-utils';
 
@@ -37,11 +38,21 @@ function YoutubeNode({ id, data, selected }: NodeProps) {
             <div className="absolute -top-7 left-1 flex items-center gap-2 px-1 py-1 z-20">
                 <Youtube className="w-3 h-3 text-red-500" />
                 <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-widest">YouTube Embed</span>
+                {(nodeData as any).isInActiveChain && (
+                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20">
+                        <span className="text-[7px] font-bold text-blue-400 uppercase tracking-tighter animate-pulse">
+                            CHAIN ACTIVE
+                        </span>
+                    </div>
+                )}
             </div>
 
             <div
-                className={`w-full h-full overflow-hidden bg-black border transition-all duration-300 rounded-2xl ${selected ? 'border-red-500/50 ring-1 ring-red-500/20' : 'border-white/5 hover:border-white/10'
-                    }`}
+                className={cn(
+                    "w-full h-full overflow-hidden bg-black border transition-all duration-300 rounded-2xl",
+                    selected ? 'border-red-500/50 ring-1 ring-red-500/20' : 'border-white/5 hover:border-white/10',
+                    (nodeData as any).isInActiveChain && "ring-1 ring-blue-500/30 ring-offset-2 ring-offset-black",
+                )}
             >
                 {videoId ? (
                     <iframe

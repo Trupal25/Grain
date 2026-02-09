@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { AlignLeft, Trash2, Copy, Sparkles, RefreshCw, Check } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 import { MIN_WIDTH, MAX_WIDTH, MIN_HEIGHT, MAX_HEIGHT } from '@/lib/canvas-utils';
 
@@ -75,10 +76,22 @@ function TextNode({ id, data, selected }: NodeProps) {
 
             {/* Node Body */}
             <div
-                className={`w-full h-full min-w-[180px] min-h-[40px] overflow-hidden flex flex-col bg-[#0A0A0A] border transition-all duration-300 rounded-[8px] group ${selected ? 'border-zinc-500/50 ring-1 ring-zinc-700/50' : 'border-white/5 hover:border-white/10'}`}
+                className={cn(
+                    "w-full h-full min-w-[180px] min-h-[40px] overflow-hidden flex flex-col bg-[#0A0A0A] border transition-all duration-300 rounded-[8px] group",
+                    selected ? 'border-zinc-500/50 ring-1 ring-zinc-700/50' : 'border-white/5 hover:border-white/10',
+                    (nodeData as any).isInActiveChain && "ring-1 ring-blue-500/30 ring-offset-2 ring-offset-black",
+                )}
             >
                 {/* Drag Handle Area */}
-                <div className="h-2 w-full bg-white/5 cursor-grab active:cursor-grabbing hover:bg-white/10 transition-colors" />
+                <div className="h-2 w-full bg-white/5 cursor-grab active:cursor-grabbing hover:bg-white/10 transition-colors relative">
+                    {(nodeData as any).isInActiveChain && (
+                        <div className="absolute right-1 top-0 bottom-0 flex items-center gap-1.5 px-1.5 rounded-full bg-blue-500/10">
+                            <span className="text-[6px] font-bold text-blue-400 uppercase tracking-tighter animate-pulse">
+                                CHAIN ACTIVE
+                            </span>
+                        </div>
+                    )}
+                </div>
 
                 <div className="flex-1 relative overflow-hidden">
                     <textarea

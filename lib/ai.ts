@@ -118,33 +118,42 @@ export async function generateChat(
 }
 
 // Image generation using Gemini with native image output
-export async function generateImage(prompt: string, aspectRatio = '1:1', model = 'imagen-3') {
+export async function generateImage(prompt: string, aspectRatio = '1:1', model = 'imagen-3', images: string[] = []) {
     if (!ai) throw new Error('AI client not initialized - set GEMINI_API_KEY');
 
     const targetModel = model.startsWith('gemini') ? 'gemini-2.0-flash-exp-image-generation' : getModelName(model);
 
-    // Use Gemini 2.0 Flash or Imagen based on model selection
-    if (targetModel.includes('imagen')) {
-        // For Imagen 3 models, typically used via Vertex AI, but here we attempt to use the model name
-        // directly if supported by the public API, otherwise fall back or warn.
-        // For now, we will pass the model name through.
-    }
-
     console.log('[AI Lib] Generating image with model:', targetModel);
     console.log('[AI Lib] Prompt:', prompt);
+
+    // Prepare contents with reference images if available
+    const parts: any[] = [{ text: `Generate an image mapping to this description: ${prompt}. Aspect ratio: ${aspectRatio}` }];
+
+    for (const url of images) {
+        const imgData = await urlToData(url);
+        if (imgData) {
+            parts.push({
+                inlineData: {
+                    data: imgData.data,
+                    mimeType: imgData.mimeType
+                }
+            });
+        }
+    }
+
     const response = await ai.models.generateContent({
         model: targetModel,
-        contents: `Generate an image: ${prompt}. Aspect ratio: ${aspectRatio}`,
+        contents: [{ role: 'user', parts }],
         config: {
             responseModalities: [Modality.TEXT, Modality.IMAGE],
         },
     });
 
     // Extract image from response parts
-    const parts = response.candidates?.[0]?.content?.parts;
-    if (!parts) throw new Error('No response from model');
+    const partsRes = response.candidates?.[0]?.content?.parts;
+    if (!partsRes) throw new Error('No response from model');
 
-    for (const part of parts) {
+    for (const part of partsRes) {
         if (part.inlineData?.mimeType?.startsWith('image/')) {
             return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
         }

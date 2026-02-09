@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 import {
     ImageIcon,
     Wand2,
@@ -22,7 +23,8 @@ import {
     RefreshCw,
     Trash2,
     AlertCircle,
-    Upload
+    Upload,
+    Play
 } from 'lucide-react';
 import { MediaModal } from '../modals/MediaModal';
 
@@ -114,8 +116,8 @@ function ImageNode({ id, data, selected, width, height }: NodeProps) {
         updateNodeData(id, { isGenerating: true });
 
         try {
-            console.log('[ImageNode] Generating image with:', { prompt, ratio: nodeData.aspectRatio, model: nodeData.model });
-            const { imageUrl } = await generateImageAPI(prompt, nodeData.aspectRatio, nodeData.model);
+            console.log('[ImageNode] Generating image with:', { prompt, ratio: nodeData.aspectRatio, model: nodeData.model, imagesCount: currentInputs.images.length });
+            const { imageUrl } = await generateImageAPI(prompt, nodeData.aspectRatio, nodeData.model, currentInputs.images);
             console.log('[ImageNode] Generation successful');
             updateNodeData(id, { imageUrl, isGenerating: false, workflowStatus: 'completed' });
 
@@ -246,6 +248,15 @@ function ImageNode({ id, data, selected, width, height }: NodeProps) {
                     className="bg-transparent text-[10px] font-semibold text-zinc-500 uppercase tracking-widest focus:outline-none focus:text-white w-28 border-b border-transparent focus:border-white/20 transition-all"
                     placeholder="NAME NODE..."
                 />
+
+                {(nodeData as any).isInActiveChain && (
+                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20">
+                        <span className="text-[8px] font-bold text-blue-400 uppercase tracking-tighter animate-pulse">
+                            CHAIN ACTIVE
+                        </span>
+                    </div>
+                )}
+
                 <span className="text-[9px] text-zinc-700 font-mono">
                     {nodeData.model?.split('-')[1]?.toUpperCase() || 'IMAGEN'}
                 </span>
@@ -253,7 +264,14 @@ function ImageNode({ id, data, selected, width, height }: NodeProps) {
 
             {/* Main Node Body - uses 100% to fill the resizable container */}
             <div
-                className={`w-full h-full overflow-hidden bg-[#0A0A0A] border transition-all duration-300 rounded-[20px] ${selected ? 'border-zinc-500/50 ring-1 ring-zinc-700/50' : 'border-white/5 hover:border-white/10'}`}
+                className={cn(
+                    "w-full h-full overflow-hidden bg-[#0A0A0A] border transition-all duration-300 rounded-[20px]",
+                    selected ? 'border-zinc-500/50 ring-1 ring-zinc-700/50' : 'border-white/5 hover:border-white/10',
+                    (nodeData as any).isInActiveChain && "ring-1 ring-blue-500/30 ring-offset-2 ring-offset-black",
+                )}
+                style={{
+                    ringColor: (nodeData as any).isInActiveChain ? '#3b82f644' : 'transparent'
+                } as any}
             >
                 {nodeData.imageUrl ? (
                     <div className="w-full h-full relative group/image cursor-zoom-in" onDoubleClick={() => setIsPreviewOpen(true)}>
@@ -333,6 +351,16 @@ function ImageNode({ id, data, selected, width, height }: NodeProps) {
                             {ASPECT_RATIOS.map(r => <SelectItem key={r.value} value={r.value} className="text-[10px]">{r.label}</SelectItem>)}
                         </SelectContent>
                     </Select>
+                    <div className="w-px h-3 bg-white/10" />
+                    <Button
+                        size="icon"
+                        variant="ghost"
+                        className={cn("h-6 w-6 rounded-full text-zinc-400 hover:text-white hover:bg-white/10")}
+                        onClick={() => (window as any).triggerWorkflow?.(id)}
+                        title="Run this node and all downstream nodes"
+                    >
+                        <Play className="w-3 h-3 fill-current" />
+                    </Button>
                     <div className="w-px h-3 bg-white/10" />
                     <Button size="icon" variant="ghost" className="h-6 w-6 rounded-full text-red-400/80 hover:text-red-400 hover:bg-red-500/10" onClick={() => deleteElements({ nodes: [{ id }] })}>
                         <Trash2 className="w-3 h-3" />

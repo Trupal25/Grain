@@ -59,8 +59,29 @@ export function isValidConnection(conn: Edge | Connection, nodes: Node[]) {
     // Media nodes (Image, Video, YouTube) can only connect to Chat for context
     if (['image', 'video', 'youtube'].includes(sourceNode.type as string)) {
         if (sourceNode.type === 'image' && targetNode.type === 'video') return true;
+        if (sourceNode.type === 'image' && targetNode.type === 'image') return true;
         return targetNode.type === 'chat';
     }
 
     return false;
+}
+export function getDownstreamNodes(startNodeId: string, nodes: Node[], edges: Edge[]) {
+    const downstream = new Set<string>();
+    const stack = [startNodeId];
+
+    while (stack.length > 0) {
+        const currentId = stack.pop()!;
+        const targets = edges
+            .filter(e => e.source === currentId)
+            .map(e => e.target);
+
+        for (const target of targets) {
+            if (!downstream.has(target)) {
+                downstream.add(target);
+                stack.push(target);
+            }
+        }
+    }
+
+    return Array.from(downstream);
 }

@@ -67,7 +67,8 @@ function NoteNode({ id, data, selected }: NodeProps) {
                     "bg-[#1A1A1A] border border-white/[0.08]",
                     selected
                         ? "ring-1 ring-blue-500/50 border-blue-500/50"
-                        : "hover:border-white/20"
+                        : "hover:border-white/20",
+                    (nodeData as any).isInActiveChain && "ring-1 ring-blue-500/30 ring-offset-2 ring-offset-black",
                 )}
             >
                 {/* Header - Minimalist & Refined */}
@@ -75,6 +76,13 @@ function NoteNode({ id, data, selected }: NodeProps) {
                     <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-[0.08em] truncate">
                         {nodeData.title || 'Untitled'}
                     </span>
+                    {(nodeData as any).isInActiveChain && (
+                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20">
+                            <span className="text-[7px] font-bold text-blue-400 uppercase tracking-tighter animate-pulse">
+                                CHAIN ACTIVE
+                            </span>
+                        </div>
+                    )}
                     <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
                             onClick={handleOpen}

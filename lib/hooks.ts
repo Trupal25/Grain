@@ -73,12 +73,12 @@ export function useNodeInputs(nodeId: string) {
 /**
  * API call helpers
  */
-export async function generateImageAPI(prompt: string, aspectRatio: string, model?: string) {
-    console.log('[API] Generating Image:', { prompt, aspectRatio, model });
+export async function generateImageAPI(prompt: string, aspectRatio: string, model?: string, images: string[] = []) {
+    console.log('[API] Generating Image:', { prompt, aspectRatio, model, imagesCount: images.length });
     const res = await fetch('/api/generate/image', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, aspectRatio, model }),
+        body: JSON.stringify({ prompt, aspectRatio, model, images }),
     });
 
     if (!res.ok) {

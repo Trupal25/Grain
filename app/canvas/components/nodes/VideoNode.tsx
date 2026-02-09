@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Video, Play, Pause, Clapperboard, Wand2, Download, RefreshCw, Trash2, AlertCircle, Upload } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 import { MIN_WIDTH, MAX_WIDTH, MIN_HEIGHT, MAX_HEIGHT } from '@/lib/canvas-utils';
 
@@ -186,12 +187,28 @@ function VideoNode({ id, data, selected }: NodeProps) {
             {/* Top Label */}
             <div className="absolute -top-7 left-1 flex items-center gap-2 px-1 py-1 z-20">
                 <input value={label} onChange={(e) => setLabel(e.target.value)} className="bg-transparent text-[10px] font-semibold text-zinc-500 uppercase tracking-widest focus:outline-none focus:text-white w-28 border-b border-transparent focus:border-white/20 transition-all" placeholder="NAME SCENE..." />
+
+                {(nodeData as any).isInActiveChain && (
+                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20">
+                        <span className="text-[8px] font-bold text-blue-400 uppercase tracking-tighter animate-pulse">
+                            CHAIN ACTIVE
+                        </span>
+                    </div>
+                )}
+
                 <span className="text-[9px] text-zinc-700 font-mono">{nodeData.model?.split('-')[1]?.toUpperCase() || 'VEO'}</span>
             </div>
 
             {/* Main Node Body */}
             <div
-                className={`w-full h-full min-w-[160px] min-h-[90px] overflow-hidden bg-[#0A0A0A] border transition-all duration-300 rounded-[16px] ${selected ? 'border-zinc-500/50 ring-1 ring-zinc-700/50' : 'border-white/5 hover:border-white/10'}`}
+                className={cn(
+                    "w-full h-full min-w-[160px] min-h-[90px] overflow-hidden bg-[#0A0A0A] border transition-all duration-300 rounded-[16px]",
+                    selected ? 'border-zinc-500/50 ring-1 ring-zinc-700/50' : 'border-white/5 hover:border-white/10',
+                    (nodeData as any).isInActiveChain && "ring-1 ring-blue-500/30 ring-offset-2 ring-offset-black",
+                )}
+                style={{
+                    ringColor: (nodeData as any).isInActiveChain ? '#3b82f644' : 'transparent'
+                } as any}
             >
                 {nodeData.videoUrl ? (
                     <div className="relative w-full h-full group/video">
@@ -297,6 +314,16 @@ function VideoNode({ id, data, selected }: NodeProps) {
                         <SelectTrigger className="h-6 border-0 bg-transparent text-[9px] text-zinc-300 w-[45px] focus:ring-0 hover:bg-white/5 rounded-full"><SelectValue placeholder="Dur" /></SelectTrigger>
                         <SelectContent className="bg-[#1A1A1A] border-zinc-800 text-zinc-300 z-50">{DURATIONS.map(d => <SelectItem key={d.value} value={d.value} className="text-[9px]">{d.label}</SelectItem>)}</SelectContent>
                     </Select>
+                    <div className="w-px h-3 bg-white/10" />
+                    <Button
+                        size="icon"
+                        variant="ghost"
+                        className={cn("h-6 w-6 rounded-full text-zinc-400 hover:text-white hover:bg-white/10")}
+                        onClick={() => (window as any).triggerWorkflow?.(id)}
+                        title="Run this node and all downstream nodes"
+                    >
+                        <Play className="w-3 h-3 fill-current" />
+                    </Button>
                     <div className="w-px h-3 bg-white/10" />
                     <Button size="icon" variant="ghost" className="h-6 w-6 rounded-full text-red-400/80 hover:text-red-400 hover:bg-red-500/10" onClick={() => deleteElements({ nodes: [{ id }] })}><Trash2 className="w-3 h-3" /></Button>
                     <div className="w-px h-3 bg-white/10" />

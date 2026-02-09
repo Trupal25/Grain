@@ -20,15 +20,15 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const { prompt, aspectRatio = '1:1', model = 'gemini-2.0-flash' } = await request.json();
+        const { prompt, aspectRatio = '1:1', model = 'gemini-2.0-flash', images = [] } = await request.json();
 
         if (!prompt) {
             return NextResponse.json({ error: 'Prompt is required' }, { status: 400 });
         }
 
         // Generate image (returns base64 data URI)
-        console.log('[API/Image] Starting generation for user:', userId, 'Model:', model);
-        const imageDataUri = await generateImage(prompt, aspectRatio, model);
+        console.log('[API/Image] Starting generation for user:', userId, 'Model:', model, 'Images:', images.length);
+        const imageDataUri = await generateImage(prompt, aspectRatio, model, images);
 
         // Convert base64 to buffer and upload to blob storage
         const { buffer, mimeType } = base64ToBuffer(imageDataUri);

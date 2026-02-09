@@ -29,6 +29,7 @@ import NoteNode from './components/nodes/NoteNode';
 import ChatNode from './components/nodes/ChatNode';
 import YoutubeNode from './components/nodes/YoutubeNode';
 import ToolsSidebar from './components/Sidebar';
+// import { WorkflowBar } from './components/WorkflowBar'; // Removed in favor of Chain approach
 import { Sidebar as AppSidebar } from '@/components/Sidebar';
 import { WorkspaceSidebar } from '@/components/WorkspaceSidebar';
 import { ImageIcon, Video, AlignLeft, Loader2, Cloud, CloudOff, Check, PanelLeft, MessageCircle, Youtube, ChevronRight, Folder, ChevronDown, MoreHorizontal } from 'lucide-react';
@@ -42,10 +43,10 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import { toast } from 'sonner';
-import type { ImageNodeData, VideoNodeData, TextNodeData, YoutubeNodeData } from './types';
+import type { ImageNodeData, VideoNodeData, TextNodeData, YoutubeNodeData, WorkflowGroup } from './types';
 import { useAutoSave, loadProject, createProject, updateProject } from '@/lib/project';
 import { Folder as FolderType, Document as DocumentType, Project as ProjectType } from '@/lib/db/schema';
-import { isValidConnection as checkValidConnection } from '@/lib/canvas-utils';
+import { isValidConnection as checkValidConnection, getDownstreamNodes } from '@/lib/canvas-utils';
 
 const nodeTypes: NodeTypes = {
   image: ImageNode,
@@ -98,6 +99,7 @@ function GrainCanvas() {
   const [credits, setCredits] = useState(0);
   const [isTreeCollapsed, setIsTreeCollapsed] = useState(false);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+
 
   const toggleFolderExpand = (e: React.MouseEvent, folderId: string) => {
     e.stopPropagation();
@@ -329,39 +331,45 @@ function GrainCanvas() {
     }
   }, [nodes, edges, isLoading, projectId, scheduleSave]);
 
-  // Workflow Logic
-  useEffect(() => {
-    (window as any).runWorkflow = () => {
-      const generators = nodes
-        .filter(n => n.type === 'image' || n.type === 'video');
+  // Chain-Based Workflow System
+  const triggerChainWorkflow = useCallback((startNodeId: string) => {
+    const downstreamIds = getDownstreamNodes(startNodeId, nodes, edges);
 
-      if (generators.length === 0) return;
+    setNodes(nds => nds.map(n => {
+      const isStartNode = n.id === startNodeId;
+      const isDownstream = downstreamIds.includes(n.id);
 
-      setNodes(nds => nds.map(n => {
+      if (isStartNode || isDownstream) {
         if (n.type === 'image' || n.type === 'video') {
           return {
             ...n,
             data: {
               ...n.data as any,
-              workflowStatus: n.id === generators[0].id ? 'queued' : 'idle'
+              workflowStatus: isStartNode ? 'queued' : 'idle',
+              isInActiveChain: true // Flag to tell orchestrator to propagate here
             }
           };
         }
-        return n;
-      }));
-    };
-  }, [nodes, setNodes]);
+      }
+      return n;
+    }));
+  }, [nodes, edges, setNodes]);
 
-  // Workflow Sequential Orchestrator
   useEffect(() => {
-    const generatorNodes = nodes.filter(n => n.type === 'image' || n.type === 'video');
-    const runningNode = generatorNodes.find(n => (n.data as any).workflowStatus === 'running');
+    (window as any).triggerWorkflow = triggerChainWorkflow;
+  }, [triggerChainWorkflow]);
 
-    if (runningNode) return;
+  // Orchestrator: Chains
+  useEffect(() => {
+    // 1. Find ANY node that is currently running. If so, wait.
+    const isAnyRunning = nodes.some(n => (n.data as any).workflowStatus === 'running');
+    if (isAnyRunning) return;
 
-    const queuedNode = generatorNodes.find(n => (n.data as any).workflowStatus === 'queued');
+    // 2. Find nodes that are 'queued'
+    const queuedNode = nodes.find(n => (n.data as any).workflowStatus === 'queued');
+
     if (queuedNode) {
-      // Move from queued to running
+      // Start this node
       setNodes(nds => nds.map(n => n.id === queuedNode.id ? {
         ...n,
         data: { ...n.data as any, workflowStatus: 'running' }
@@ -369,20 +377,28 @@ function GrainCanvas() {
       return;
     }
 
-    // Check if we need to queue the next one
-    const lastCompletedIndex = generatorNodes.reduce((acc, n, i) =>
-      (n.data as any).workflowStatus === 'completed' ? i : acc, -1);
+    // 3. Check for recently completed nodes to propagate to their children
+    const completedNodes = nodes.filter(n => (n.data as any).workflowStatus === 'completed');
 
-    if (lastCompletedIndex !== -1 && lastCompletedIndex < generatorNodes.length - 1) {
-      const nextNode = generatorNodes[lastCompletedIndex + 1];
-      if ((nextNode.data as any).workflowStatus === 'idle') {
-        setNodes(nds => nds.map(n => n.id === nextNode.id ? {
+    for (const node of completedNodes) {
+      // Find immediate children that are marked as being in an active chain and are currently idle
+      const childrenIds = edges.filter(e => e.source === node.id).map(e => e.target);
+      const readyChild = nodes.find(n =>
+        childrenIds.includes(n.id) &&
+        (n.data as any).isInActiveChain &&
+        (n.data as any).workflowStatus === 'idle'
+      );
+
+      if (readyChild) {
+        // Move child to queued
+        setNodes(nds => nds.map(n => n.id === readyChild.id ? {
           ...n,
-          data: { ...n.data as any, workflowStatus: 'queued' }
+          data: { ...n.data as any, workflowStatus: 'queued', isInActiveChain: false } // Reset flag as it's now moving
         } : n));
+        break; // Only start one child at a time to maintain sequence
       }
     }
-  }, [nodes, setNodes]);
+  }, [nodes, edges, setNodes]);
 
   const onConnect = useCallback((params: Connection) => {
     connectingRef.current = true;

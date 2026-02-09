@@ -2,7 +2,15 @@
 
 export interface BaseNodeData {
     label?: string;
+    workflowGroupId?: string;
+    workflowStatus?: 'idle' | 'queued' | 'running' | 'completed' | 'error';
     [key: string]: unknown;
+}
+
+export interface WorkflowGroup {
+    id: string;
+    name: string;
+    color: string;
 }
 
 /* Image Node */

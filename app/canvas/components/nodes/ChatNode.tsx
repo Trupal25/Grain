@@ -252,11 +252,19 @@ function ChatNode({ id, data, selected }: NodeProps) {
             {/* Main Node Body */}
             <div className={cn(
                 "w-full h-full flex flex-col bg-[#0A0A0A] border transition-all duration-300 rounded-2xl overflow-hidden",
-                selected ? "border-zinc-700 ring-4 ring-white/5" : "border-white/5 shadow-2xl"
+                selected ? "border-zinc-700 ring-4 ring-white/5" : "border-white/5 shadow-2xl",
+                (nodeData as any).isInActiveChain && "ring-1 ring-blue-500/30 ring-offset-2 ring-offset-black",
             )}>
                 {/* Grab Handle Header */}
-                <div className="h-3 w-full flex items-center justify-center bg-black/40 border-b border-white/5 cursor-grab active:cursor-grabbing group/handle">
+                <div className="h-3 w-full flex items-center justify-center bg-black/40 border-b border-white/5 cursor-grab active:cursor-grabbing group/handle relative">
                     <div className="w-8 h-0.5 rounded-full bg-zinc-800 group-hover/handle:bg-zinc-700 transition-colors" />
+                    {(nodeData as any).isInActiveChain && (
+                        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20">
+                            <span className="text-[7px] font-bold text-blue-400 uppercase tracking-tighter animate-pulse">
+                                CHAIN ACTIVE
+                            </span>
+                        </div>
+                    )}
                 </div>
 
                 {/* Chat Feed */}
