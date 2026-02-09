@@ -7,22 +7,28 @@ import { useRouter } from 'next/navigation';
 import { motion, useScroll, useTransform, useInView } from 'framer-motion';
 import {
     Wand2,
-    Video,
     Layout,
     ArrowRight,
     Play,
     Box,
     Workflow,
     Activity,
-    Shield,
-    Globe,
     Cpu,
     Layers
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-const BentoCard = ({ children, className, title, description, icon: Icon, delay = 0 }: any) => {
+interface BentoCardProps {
+    children?: React.ReactNode;
+    className?: string;
+    title: string;
+    description: string;
+    icon: React.ElementType;
+    delay?: number;
+}
+
+const BentoCard = ({ children, className, title, description, icon: Icon, delay = 0 }: BentoCardProps) => {
     const ref = useRef(null);
     const isInView = useInView(ref, { once: true, margin: "-100px" });
 
@@ -322,8 +328,8 @@ export default function HomePage() {
                         Not just a tool. <br /> A Creative Space.
                     </h3>
                     <p className="text-xl md:text-3xl font-bold tracking-tight max-w-4xl opacity-40 mb-24 relative z-10 leading-relaxed uppercase">
-                        The hardest part of building with AI isn't generation. <br className="hidden md:block" />
-                        It's designing the right environment for it.
+                        The hardest part of building with AI isn&apos;t generation. <br className="hidden md:block" />
+                        It&apos;s designing the right environment for it.
                     </p>
                 </div>
             </section>

@@ -1,32 +1,23 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
-import { useUser, UserButton } from '@clerk/nextjs';
+import { useUser } from '@clerk/nextjs';
 import {
-    Folder,
     FileText,
     Layout,
     Plus,
-    Search,
-    MoreHorizontal,
     Trash2,
     Clock,
     Home,
     Loader2,
-    ChevronRight,
     ChevronDown,
     Link2,
     Upload,
-    MessageSquare,
-    Image as ImageIcon,
-    Grid3X3,
-    Layers,
     ArrowLeft,
     FolderPlus,
     LayoutGrid,
     List,
-    ExternalLink,
     RotateCcw,
     X,
     Star,
@@ -60,17 +51,6 @@ interface BreadcrumbData {
 
 type ViewMode = 'grid' | 'list';
 type CreateMode = 'note' | 'canvas' | 'link' | 'upload';
-
-interface FolderTreeItemProps {
-    folder: FolderType;
-    allFolders: FolderType[];
-    expandedFolders: Set<string>;
-    toggleFolderExpand: (e: React.MouseEvent, folderId: string) => void;
-    openFolder: (folder: FolderType) => void;
-    currentFolderId: string | null;
-}
-
-
 
 interface ItemActionsProps {
     id: string;
@@ -121,7 +101,7 @@ function ItemActions({ id, type, isStarred, isTrashView, onToggleStar, onMoveToT
     );
 }
 
-export default function DashboardPage() {
+function DashboardContent() {
     const { user, isLoaded } = useUser();
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -178,7 +158,7 @@ export default function DashboardPage() {
         }
 
         if (filter) {
-            setActiveFilter(filter as any);
+            setActiveFilter(filter as 'all' | 'documents' | 'projects' | 'links' | 'files');
         } else {
             if (!searchParams.get('folderId')) {
                 setActiveFilter('all');
@@ -546,8 +526,6 @@ export default function DashboardPage() {
     const filteredFiles = files.filter(f =>
         f.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
-
-    const hasItems = filteredFolders.length > 0 || filteredProjects.length > 0 || filteredDocuments.length > 0 || filteredLinks.length > 0 || filteredFiles.length > 0;
     const currentFolder = breadcrumbs[breadcrumbs.length - 1];
 
     // Filter by type if activeFilter is not 'all'
@@ -1106,5 +1084,17 @@ export default function DashboardPage() {
                 onSubmit={createLink}
             />
         </div >
+    );
+}
+
+export default function DashboardPage() {
+    return (
+        <Suspense fallback={
+            <div className="w-screen h-screen bg-zinc-950 flex items-center justify-center">
+                <Loader2 className="w-8 h-8 text-white animate-spin" />
+            </div>
+        }>
+            <DashboardContent />
+        </Suspense>
     );
 }
