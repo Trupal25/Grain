@@ -97,6 +97,7 @@ export interface NoteNodeData extends BaseNodeData {
 export interface ChatMessage {
     role: 'user' | 'assistant';
     content: string;
+    attachments?: { url: string; name?: string; type?: string }[];
 }
 
 export interface ChatNodeData extends BaseNodeData {

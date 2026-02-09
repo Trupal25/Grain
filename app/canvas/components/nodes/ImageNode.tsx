@@ -24,6 +24,7 @@ import {
     AlertCircle,
     Upload
 } from 'lucide-react';
+import { MediaModal } from '../modals/MediaModal';
 
 const MIN_SIZE = 100;
 const MAX_SIZE = 600;
@@ -76,6 +77,7 @@ function ImageNode({ id, data, selected, width, height }: NodeProps) {
     const [label, setLabel] = useState(nodeData.label || 'Image');
     const [error, setError] = useState<string | null>(null);
     const [isUploading, setIsUploading] = useState(false);
+    const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
     const hoverTimer = useRef<NodeJS.Timeout | undefined>(undefined);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -150,12 +152,23 @@ function ImageNode({ id, data, selected, width, height }: NodeProps) {
         }
     }, [nodeData.workflowStatus, nodeData.isGenerating]);
 
-    const handleDownload = () => {
+    const handleDownload = async () => {
         if (!nodeData.imageUrl) return;
-        const link = document.createElement('a');
-        link.href = nodeData.imageUrl;
-        link.download = `${label || 'image'}.png`;
-        link.click();
+        try {
+            const response = await fetch(nodeData.imageUrl);
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = (label || 'grain-image').replace(/\s+/g, '-').toLowerCase() + '.png';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('Download failed:', error);
+            window.open(nodeData.imageUrl, '_blank');
+        }
     };
 
     // Upload functionality
@@ -243,13 +256,13 @@ function ImageNode({ id, data, selected, width, height }: NodeProps) {
                 className={`w-full h-full overflow-hidden bg-[#0A0A0A] border transition-all duration-300 rounded-[20px] ${selected ? 'border-zinc-500/50 ring-1 ring-zinc-700/50' : 'border-white/5 hover:border-white/10'}`}
             >
                 {nodeData.imageUrl ? (
-                    <div className="w-full h-full relative group/image">
+                    <div className="w-full h-full relative group/image cursor-zoom-in" onDoubleClick={() => setIsPreviewOpen(true)}>
                         <img src={nodeData.imageUrl} alt="Generated" className="w-full h-full object-cover nodrag pointer-events-none" />
                         <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover/image:opacity-100 transition-opacity pointer-events-auto">
                             <Button size="icon" variant="secondary" className="h-5 w-5 rounded-full bg-black/50 backdrop-blur text-white hover:bg-black/70" onClick={handleDownload}>
                                 <Download className="w-2.5 h-2.5" />
                             </Button>
-                            <Button size="icon" variant="secondary" className="h-5 w-5 rounded-full bg-black/50 backdrop-blur text-white hover:bg-black/70">
+                            <Button size="icon" variant="secondary" className="h-5 w-5 rounded-full bg-black/50 backdrop-blur text-white hover:bg-black/70" onClick={() => setIsPreviewOpen(true)}>
                                 <Maximize2 className="w-2.5 h-2.5" />
                             </Button>
                         </div>
@@ -340,6 +353,13 @@ function ImageNode({ id, data, selected, width, height }: NodeProps) {
             {/* Handles */}
             <Handle type="target" position={Position.Left} />
             <Handle type="source" position={Position.Right} />
+
+            <MediaModal
+                isOpen={isPreviewOpen}
+                onClose={() => setIsPreviewOpen(false)}
+                src={nodeData.imageUrl || ''}
+                title={label}
+            />
         </div>
     );
 }
