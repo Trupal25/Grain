@@ -54,9 +54,7 @@ export default function HomePage() {
     const { isSignedIn, isLoaded } = useUser();
     const router = useRouter();
     const [mounted, setMounted] = useState(false);
-    const containerRef = useRef(null);
     const { scrollYProgress } = useScroll({
-        target: containerRef,
         offset: ["start start", "end start"]
     });
 
@@ -76,7 +74,7 @@ export default function HomePage() {
     if (!mounted) return null;
 
     return (
-        <div ref={containerRef} className="min-h-screen bg-[#050505] text-white selection:bg-white selection:text-black font-sans">
+        <div className="min-h-screen bg-[#050505] text-white selection:bg-white selection:text-black font-sans">
             {/* Grid Pattern Background */}
             <div className="fixed inset-0 z-0 opacity-[0.05] pointer-events-none"
                 style={{ backgroundImage: `linear-gradient(to right, #ffffff 1px, transparent 1px), linear-gradient(to bottom, #ffffff 1px, transparent 1px)`, backgroundSize: '64px 64px' }} />
@@ -128,13 +126,13 @@ export default function HomePage() {
                 >
                     <div className="inline-flex items-center gap-3 px-6 py-2 rounded-full bg-white/[0.02] border border-white/[0.05] mb-12 backdrop-blur-2xl">
                         <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.8)]" />
-                        <span className="text-[10px] font-bold tracking-[0.4em] uppercase text-zinc-500">System v2.4.0 // Neural Pipeline Active</span>
+                        <span className="text-[10px] font-bold tracking-[0.4em] uppercase text-zinc-500">System v2.4.0 // Creative Engine Active</span>
                     </div>
 
-                    <h1 className="text-8xl md:text-[11rem] font-black tracking-[-0.08em] leading-[0.8] mb-16 flex flex-col items-center uppercase">
-                        <span className="block italic">CORTEX</span>
+                    <h1 className="text-6xl md:text-9xl font-black tracking-[-0.08em] leading-[0.9] mb-16 flex flex-col items-center uppercase">
+                        <span className="block italic">BEYOND</span>
                         <span className="text-zinc-600 block relative">
-                            WORKFLOWS
+                            LINEAR THINKING
                             <motion.div
                                 initial={{ width: "0%" }}
                                 animate={{ width: "100%" }}
@@ -145,14 +143,14 @@ export default function HomePage() {
                     </h1>
 
                     <p className="text-xl md:text-2xl text-zinc-500 max-w-3xl mx-auto mb-20 leading-relaxed font-medium tracking-tight">
-                        Unified industrial-scale generative engine. <br className="hidden md:block" />
-                        A boundless obsidian interface for visual engineering.
+                        Grain is a creative canvas for building exploratory workflows. <br className="hidden md:block" />
+                        Visually map ideas, connect steps, and integrate AI into the same space.
                     </p>
 
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-10 mb-32">
                         <Link href="/sign-up">
                             <Button size="lg" className="bg-blue-600 hover:bg-blue-500 text-white px-12 h-20 rounded-full text-[11px] font-bold tracking-[0.3em] uppercase group shadow-[0_20px_50px_rgba(37,99,235,0.2)] transition-all hover:scale-105 active:scale-95">
-                                Start Building
+                                Start Exploring
                                 <ArrowRight className="ml-3 w-4 h-4 transition-transform group-hover:translate-x-1" />
                             </Button>
                         </Link>
@@ -160,7 +158,7 @@ export default function HomePage() {
                             <div className="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center mr-4 group-hover:bg-white group-hover:text-black transition-all">
                                 <Play className="w-4 h-4 fill-current ml-1" />
                             </div>
-                            CORE DEMO
+                            See the Workflow
                         </Button>
                     </div>
                 </motion.div>
@@ -182,7 +180,7 @@ export default function HomePage() {
                                 <div className="w-3 h-3 rounded-full bg-zinc-800" />
                                 <div className="w-3 h-3 rounded-full bg-zinc-800" />
                             </div>
-                            <div className="mx-auto text-[10px] font-bold text-zinc-700 tracking-[0.5em] uppercase">grain_os_operating_environment</div>
+                            <div className="mx-auto text-[10px] font-bold text-zinc-700 tracking-[0.5em] uppercase">grain_creative_environment</div>
                         </div>
                         {/* Image Showcase */}
                         <div className="aspect-[16/10] overflow-hidden">
@@ -202,7 +200,7 @@ export default function HomePage() {
                             >
                                 <div className="flex items-center gap-4 mb-4">
                                     <div className="h-2 w-2 rounded-full bg-blue-500" />
-                                    <span className="text-[10px] font-bold tracking-[0.3em] uppercase">SYSTEM_STATE</span>
+                                    <span className="text-[10px] font-bold tracking-[0.3em] uppercase">IDEA_EVOLUTION</span>
                                 </div>
                                 <div className="space-y-3">
                                     <div className="h-2 w-32 bg-white/10 rounded-full" />
@@ -217,7 +215,7 @@ export default function HomePage() {
                             >
                                 <div className="flex items-center gap-4 mb-4">
                                     <Workflow className="w-4 h-4 text-zinc-500" />
-                                    <span className="text-[10px] font-bold tracking-[0.3em] uppercase">PIPELINE_FLOW</span>
+                                    <span className="text-[10px] font-bold tracking-[0.3em] uppercase">EXPLORATION_TRAIL</span>
                                 </div>
                                 <div className="flex gap-2">
                                     <div className="h-8 w-8 rounded-lg bg-white/5 border border-white/10" />
@@ -234,22 +232,22 @@ export default function HomePage() {
             <section className="relative py-60 px-6 max-w-7xl mx-auto">
                 <div className="mb-32 flex flex-col lg:flex-row lg:items-end justify-between gap-16">
                     <div className="max-w-2xl">
-                        <div className="inline-block px-4 py-1.5 rounded border border-white/10 text-[9px] font-bold tracking-[0.4em] uppercase mb-10 text-zinc-500">Core Architecture</div>
-                        <h2 className="text-6xl md:text-8xl font-black tracking-[-0.05em] mb-8 uppercase leading-[0.9]">Designed for <br /> Intelligence.</h2>
+                        <div className="inline-block px-4 py-1.5 rounded border border-white/10 text-[9px] font-bold tracking-[0.4em] uppercase mb-10 text-zinc-500">Design Philosophy</div>
+                        <h2 className="text-6xl md:text-8xl font-black tracking-[-0.05em] mb-8 uppercase leading-[0.9]">A Living <br /> Workspace.</h2>
                         <p className="text-zinc-500 text-lg font-medium leading-relaxed">
-                            A zero-latency ecosystem built for high-velocity teams. <br className="hidden md:block" />
-                            Where complex logic meets industrial-grade aesthetics.
+                            Most AI tools focus on quick outputs. Grain is for the journey. <br className="hidden md:block" />
+                            Ideas evolve through connection, iteration, and structured exploration.
                         </p>
                     </div>
                     <Button variant="outline" className="border-white/10 rounded-full h-16 px-10 text-[10px] font-bold tracking-[0.3em] uppercase hover:bg-white hover:text-black transition-all">
-                        Technical Specs
+                        Read Manifesto
                     </Button>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-6 auto-rows-[400px]">
                     <BentoCard
-                        title="Neural Canvas"
-                        description="Proprietary obsidian engine optimized for gigapixel asset manipulation and real-time state synchronization."
+                        title="Exploratory Canvas"
+                        description="A node-based environment where research trails can evolve and creative workflows can be structured."
                         icon={Layout}
                         className="md:col-span-8 md:row-span-2"
                         delay={0.1}
@@ -261,40 +259,40 @@ export default function HomePage() {
                     </BentoCard>
 
                     <BentoCard
-                        title="Cortex Pipelines"
-                        description="State-aware node architecture for enterprise automation."
-                        icon={Workflow}
+                        title="AI as Material"
+                        description="AI isn't just a feature interaction—it's a creative material embedded in your workflow."
+                        icon={Wand2}
                         className="md:col-span-4"
                         delay={0.2}
                     />
 
                     <BentoCard
-                        title="Atomic State"
-                        description="Real-time multi-user synchronization with zero drift."
-                        icon={Activity}
+                        title="Unified Studio"
+                        description="Keep modules, outputs, and logic in one cohesive workspace. No more scattered tools."
+                        icon={Layers}
                         className="md:col-span-4"
                         delay={0.3}
                     />
 
                     <BentoCard
-                        title="Asset Integrity"
-                        description="Military-grade IP protection for high-value creative assets."
-                        icon={Shield}
+                        title="Structured Freedom"
+                        description="A canvas that balances free-form exploration with the structure needed for complex projects."
+                        icon={Workflow}
                         className="md:col-span-4"
                         delay={0.4}
                     />
 
                     <BentoCard
-                        title="Global Scale"
-                        description="Distributed neural compute nodes across 24 regions."
-                        icon={Globe}
+                        title="Project Evolution"
+                        description="From rough sketches to refined outputs, everything lives in a traceable lineage."
+                        icon={Activity}
                         className="md:col-span-4"
                         delay={0.5}
                     />
 
                     <BentoCard
-                        title="Visual Logic"
-                        description="Turn complex branding systems into repeatable neural workflows in minutes."
+                        title="Creative Operating Space"
+                        description="Grain is more than a tool. It's an environment designed to shape better thinking and allow ideas to grow into projects."
                         icon={Cpu}
                         className="md:col-span-12 h-[300px]"
                         delay={0.6}
@@ -316,19 +314,14 @@ export default function HomePage() {
             {/* Industrial Banner */}
             <section className="relative py-80 px-6 bg-white text-black rounded-[80px] overflow-hidden">
                 <div className="max-w-7xl mx-auto flex flex-col items-center text-center">
-                    <h2 className="text-[12rem] md:text-[22rem] font-black tracking-[-0.1em] leading-none mb-20 opacity-[0.03] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 select-none uppercase">INDUSTRIAL</h2>
+                    <h2 className="text-[12rem] md:text-[22rem] font-black tracking-[-0.1em] leading-none mb-20 opacity-[0.03] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 select-none uppercase">EVOLUTION</h2>
                     <h3 className="text-6xl md:text-9xl font-black tracking-[-0.05em] uppercase leading-none mb-16 relative z-10 italic">
-                        The Standard for <br /> Visual Intelligence.
+                        Not just a tool. <br /> A Creative Space.
                     </h3>
                     <p className="text-xl md:text-3xl font-bold tracking-tight max-w-4xl opacity-40 mb-24 relative z-10 leading-relaxed uppercase">
-                        Scale your creative operations with the power of <br className="hidden md:block" />
-                        unified neural processing and boundless visual logic.
+                        The hardest part of building with AI isn't generation. <br className="hidden md:block" />
+                        It's designing the right environment for it.
                     </p>
-                    <div className="flex flex-wrap justify-center gap-24 relative z-10 opacity-30 grayscale saturate-0 contrast-125 uppercase">
-                        {['NVIDIA', 'ADOBE', 'OPENAI', 'PIXAR', 'LUMON'].map(brand => (
-                            <span key={brand} className="text-4xl font-black tracking-tighter">{brand}</span>
-                        ))}
-                    </div>
                 </div>
             </section>
 
@@ -336,13 +329,14 @@ export default function HomePage() {
             <section className="relative py-60 px-6 flex justify-center">
                 <div className="max-w-[1200px] w-full p-24 rounded-[60px] bg-gradient-to-br from-zinc-900 to-black border border-white/[0.04] text-center relative overflow-hidden group">
                     <div className="absolute inset-0 bg-blue-600/5 blur-[120px] opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
-                    <h2 className="text-6xl md:text-8xl font-black tracking-[-0.05em] mb-12 uppercase leading-none">Enter the cortex.</h2>
+                    <h2 className="text-6xl md:text-8xl font-black tracking-[-0.05em] mb-12 uppercase leading-none">Grain is just the beginning.</h2>
                     <p className="text-zinc-500 max-w-xl mx-auto mb-16 text-xl font-medium tracking-tight">
-                        Join the restricted ecosystem. Experience the next <br /> evolutionary step in human-AI collaboration.
+                        Experience the next evolutionary step in human-AI collaboration. <br />
+                        Where ideas are not just stored, but cultivated.
                     </p>
                     <Link href="/sign-up">
                         <Button size="lg" className="bg-white text-black hover:bg-zinc-200 px-16 h-24 rounded-full text-[12px] font-bold tracking-[0.4em] uppercase transition-all hover:scale-105 shadow-[0_40px_100px_rgba(255,255,255,0.1)]">
-                            Secure Access Token
+                            Join the Journey
                         </Button>
                     </Link>
                 </div>
