@@ -17,6 +17,7 @@
     "@blocknote/mantine": "^0.46.2",
     "@blocknote/react": "^0.46.2",
     "@clerk/nextjs": "^6.37.3",
+    "@clerk/themes": "^2.4.51",
     "@google/genai": "^1.40.0",
     "@mantine/core": "^8.3.14",
     "@mantine/hooks": "^8.3.14",

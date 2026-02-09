@@ -1,7 +1,7 @@
-import { SignIn } from "@clerk/nextjs";
+import { SignUp } from "@clerk/nextjs";
 import { dark } from "@clerk/themes";
 
-export default function LoginPage() {
+export default function SignUpPage() {
     return (
         <div className="min-h-screen bg-black flex items-center justify-center">
             <div className="text-center">
@@ -16,7 +16,7 @@ export default function LoginPage() {
                     <p className="text-sm text-zinc-500">Creative AI Canvas</p>
                 </div>
 
-                <SignIn
+                <SignUp
                     appearance={{
                         baseTheme: dark,
                         variables: { colorPrimary: '#2563eb' },
@@ -27,7 +27,7 @@ export default function LoginPage() {
                     }}
                     routing="hash"
                     fallbackRedirectUrl="/"
-                    signUpUrl="/sign-up"
+                    signInUrl="/login"
                 />
             </div>
         </div>

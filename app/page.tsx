@@ -105,12 +105,12 @@ export default function HomePage() {
                     </div>
 
                     <div className="flex items-center gap-6">
-                        <Link href="/sign-in" className="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-500 hover:text-white hidden sm:block">
+                        <Link href="/login" className="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-500 hover:text-white hidden sm:block">
                             Log In
                         </Link>
                         <Link href="/sign-up">
                             <Button className="bg-white text-black hover:bg-zinc-200 rounded-full px-8 h-12 text-[10px] font-bold tracking-[0.2em] uppercase transition-all hover:scale-105 active:scale-95 shadow-[0_0_30px_rgba(255,255,255,0.1)]">
-                                Request Access
+                                Sign Up
                             </Button>
                         </Link>
                     </div>
@@ -155,7 +155,7 @@ export default function HomePage() {
                                 <ArrowRight className="ml-3 w-4 h-4 transition-transform group-hover:translate-x-1" />
                             </Button>
                         </Link>
-                        <Link href="/sign-in">
+                        <Link href="/login">
                             <Button variant="ghost" className="text-zinc-500 hover:text-white h-16 px-8 text-[11px] font-bold tracking-[0.3em] uppercase group">
                                 <div className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center mr-4 group-hover:bg-white group-hover:text-black transition-all">
                                     <Play className="w-3 h-3 fill-current ml-0.5" />
@@ -339,7 +339,7 @@ export default function HomePage() {
                     </p>
                     <Link href="/sign-up">
                         <Button size="lg" className="bg-white text-black hover:bg-zinc-200 px-16 h-24 rounded-full text-[12px] font-bold tracking-[0.4em] uppercase transition-all hover:scale-105 shadow-[0_40px_100px_rgba(255,255,255,0.1)]">
-                            Join the Journey
+                            Start Creating
                         </Button>
                     </Link>
                 </div>
