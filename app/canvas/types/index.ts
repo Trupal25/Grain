@@ -24,14 +24,12 @@ export interface ImageNodeData extends BaseNodeData {
 }
 
 export type ImageModel =
-    | 'gemini-2.0-flash'
-    | 'imagen-3'
-    | 'imagen-3-fast';
+    | 'gemini-3-image'
+    | 'gemini-2.0-flash';
 
 export const IMAGE_MODELS: { value: ImageModel; label: string }[] = [
+    { value: 'gemini-3-image', label: 'Gemini 3 Pro (Image)' },
     { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash' },
-    { value: 'imagen-3', label: 'Imagen 3' },
-    { value: 'imagen-3-fast', label: 'Imagen 3 Fast' },
 ];
 
 /* Video Node */
@@ -50,12 +48,14 @@ export interface VideoNodeData extends BaseNodeData {
 export type VideoModel =
     | 'veo-2'
     | 'veo-3'
-    | 'veo-3-fast';
+    | 'veo-3-fast'
+    | 'veo-3.1';
 
 export const VIDEO_MODELS: { value: VideoModel; label: string }[] = [
     { value: 'veo-2', label: 'Veo 2' },
     { value: 'veo-3', label: 'Veo 3' },
     { value: 'veo-3-fast', label: 'Veo 3 Fast' },
+    { value: 'veo-3.1', label: 'Veo 3.1 Preview' },
 ];
 
 /* Text Node */
@@ -67,12 +67,16 @@ export interface TextNodeData extends BaseNodeData {
 }
 
 export type TextModel =
+    | 'gemini-3-pro'
+    | 'gemini-3-flash'
     | 'gemini-2.5-pro'
     | 'gemini-2.5-flash'
     | 'gemini-2.0-flash'
     | 'gemini-2.0-flash-lite';
 
 export const TEXT_MODELS: { value: TextModel; label: string }[] = [
+    { value: 'gemini-3-pro', label: 'Gemini 3 Pro (Preview)' },
+    { value: 'gemini-3-flash', label: 'Gemini 3 Flash (Preview)' },
     { value: 'gemini-2.0-flash-lite', label: 'Gemini 2.0 Flash Lite' },
     { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash' },
     { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },

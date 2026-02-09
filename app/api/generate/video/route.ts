@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server';
 import { generateVideo } from '@/lib/ai';
 import { checkCredits, decrementCredits } from '@/lib/credits';
 import { uploadBlob, generateBlobFilename } from '@/lib/storage';
+import { ensureUserExists } from '@/lib/user';
 
 export async function POST(request: NextRequest) {
     try {
@@ -10,6 +11,9 @@ export async function POST(request: NextRequest) {
         if (!userId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
+
+        // Ensure user exists
+        await ensureUserExists(userId);
 
         // Check credits (video is more expensive)
         const hasCredits = await checkCredits(userId, 'video');

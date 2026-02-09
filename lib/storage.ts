@@ -33,9 +33,10 @@ export async function uploadBlob(
         throw new Error(uploadResult.error.message);
     }
 
-    const { ufsUrl } = uploadResult.data;
-    console.log('[UploadThing] Upload successful:', ufsUrl);
-    return ufsUrl;
+    const { url, ufsUrl } = uploadResult.data;
+    const finalUrl = url || ufsUrl;
+    console.log('[UploadThing] Upload successful:', finalUrl);
+    return finalUrl;
 }
 
 /**

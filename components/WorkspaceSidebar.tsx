@@ -135,7 +135,7 @@ function FolderTreeItem({
                         <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onCreateItem?.('document', 'note', folder.id); }} className="focus:bg-zinc-800 focus:text-white">
                             <NotebookPen className="w-3.5 h-3.5 mr-2" /> New Note
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onCreateItem?.('document', 'canvas', folder.id); }} className="focus:bg-zinc-800 focus:text-white">
+                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onCreateItem?.('project', undefined, folder.id); }} className="focus:bg-zinc-800 focus:text-white">
                             <StickyNote className="w-3.5 h-3.5 mr-2" /> New Canvas
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onCreateItem?.('folder', undefined, folder.id); }} className="focus:bg-zinc-800 focus:text-white">
@@ -585,7 +585,7 @@ export function WorkspaceSidebar({
                                     <DropdownMenuItem onClick={() => handleCreateClick('document', 'note')} className="focus:bg-zinc-800 focus:text-white py-2">
                                         <NotebookPen className="w-4 h-4 mr-2 text-zinc-500" /> New Note
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleCreateClick('document', 'canvas')} className="focus:bg-zinc-800 focus:text-white py-2">
+                                    <DropdownMenuItem onClick={() => handleCreateClick('project')} className="focus:bg-zinc-800 focus:text-white py-2">
                                         <StickyNote className="w-4 h-4 mr-2 text-zinc-500" /> New Canvas
                                     </DropdownMenuItem>
                                     <DropdownMenuSeparator className="bg-zinc-800" />

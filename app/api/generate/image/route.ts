@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server';
 import { generateImage } from '@/lib/ai';
 import { uploadBlob, base64ToBuffer, generateBlobFilename } from '@/lib/storage';
 import { checkCredits, decrementCredits } from '@/lib/credits';
+import { ensureUserExists } from '@/lib/user';
 
 export async function POST(request: NextRequest) {
     try {
@@ -10,6 +11,9 @@ export async function POST(request: NextRequest) {
         if (!userId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
+
+        // Ensure user exists
+        await ensureUserExists(userId);
 
         // Check credits
         const hasCredits = await checkCredits(userId, 'image');

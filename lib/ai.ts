@@ -18,11 +18,18 @@ const MODEL_ALIASES: Record<string, string> = {
     'gemini-2.5-pro': 'gemini-2.5-pro-preview-02-04-2025',
     'gemini-2.5-flash': 'gemini-2.5-flash-preview-02-04-2025',
     'gemini-2.5-flash-native-audio': 'gemini-2.5-flash-native-audio-latest',
-    'imagen-3': 'imagen-3.0-generate-001',
-    'imagen-3-fast': 'imagen-3.0-fast-generate-001',
+    'gemini-3-pro': 'gemini-3-pro-preview',
+    'gemini-3-flash': 'gemini-3-flash-preview',
+    'gemini-3-image': 'gemini-3-pro-image-preview',
+    'imagen-3': 'imagen-4.0-generate-001',
+    'imagen-3-fast': 'imagen-4.0-fast-generate-001',
+    'imagen-4': 'imagen-4.0-generate-001',
+    'imagen-4-ultra': 'imagen-4.0-ultra-generate-001',
+    'imagen-4-fast': 'imagen-4.0-fast-generate-001',
     'veo-2': 'veo-2.0-generate-001',
     'veo-3': 'veo-3.0-generate-001',
     'veo-3-fast': 'veo-3.0-fast-generate-001',
+    'veo-3.1': 'veo-3.1-generate-preview',
 };
 
 function getModelName(model: string) {
@@ -118,14 +125,56 @@ export async function generateChat(
 }
 
 // Image generation using Gemini with native image output
-export async function generateImage(prompt: string, aspectRatio = '1:1', model = 'imagen-3', images: string[] = []) {
+export async function generateImage(prompt: string, aspectRatio = '1:1', model = 'imagen-4', images: string[] = []) {
     if (!ai) throw new Error('AI client not initialized - set GEMINI_API_KEY');
 
-    const targetModel = model.startsWith('gemini') ? 'gemini-2.0-flash-exp-image-generation' : getModelName(model);
+    let targetModel = getModelName(model);
+    // Use experimental endpoint for 2.0 Flash image gen specifically
+    if (model === 'gemini-2.0-flash') {
+        targetModel = 'gemini-2.0-flash-exp-image-generation';
+    }
 
     console.log('[AI Lib] Generating image with model:', targetModel);
     console.log('[AI Lib] Prompt:', prompt);
 
+    // Branch for Imagen models (using generateImages)
+    if (targetModel.toLowerCase().includes('imagen')) {
+        console.log('[AI Lib] Using generateImages API for Imagen model');
+
+        // Prepare optional reference image for editing/control
+        let imageInput: any = undefined;
+        if (images.length > 0) {
+            const imgData = await urlToData(images[0]);
+            if (imgData) {
+                imageInput = {
+                    imageBytes: imgData.data,
+                    bytesBase64Encoded: imgData.data,
+                    mimeType: imgData.mimeType
+                };
+            }
+        }
+
+        if (images.length > 0) {
+            console.warn('[AI Lib] Image inputs are ignored for Imagen models (Text-to-Image only). Use Gemini for multimodal.');
+        }
+
+        const response = await ai.models.generateImages({
+            model: targetModel,
+            prompt,
+            config: {
+                aspectRatio: aspectRatio,
+                numberOfImages: 1,
+            }
+        });
+
+        const genImg = (response as any).generatedImages?.[0]?.image;
+        if (genImg?.imageBytes) {
+            return `data:image/png;base64,${genImg.imageBytes}`;
+        }
+        throw new Error('No image generated from generateImages API');
+    }
+
+    // Branch for Gemini models (using generateContent)
     // Prepare contents with reference images if available
     const parts: any[] = [{ text: `Generate an image mapping to this description: ${prompt}. Aspect ratio: ${aspectRatio}` }];
 

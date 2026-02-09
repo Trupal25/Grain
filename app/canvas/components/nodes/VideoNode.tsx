@@ -109,12 +109,24 @@ function VideoNode({ id, data, selected }: NodeProps) {
         }
     }, [nodeData.workflowStatus, nodeData.isGenerating]);
 
-    const handleDownload = () => {
+    const handleDownload = async () => {
         if (!nodeData.videoUrl) return;
-        const link = document.createElement('a');
-        link.href = nodeData.videoUrl;
-        link.download = `${label || 'video'}.mp4`;
-        link.click();
+        try {
+            const response = await fetch(nodeData.videoUrl);
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${label || 'video'}.mp4`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('Download failed:', error);
+            // Fallback to opening in new tab
+            window.open(nodeData.videoUrl, '_blank');
+        }
     };
 
     // Upload functionality

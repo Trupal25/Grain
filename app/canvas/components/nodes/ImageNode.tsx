@@ -121,22 +121,26 @@ function ImageNode({ id, data, selected, width, height }: NodeProps) {
             console.log('[ImageNode] Generation successful');
             updateNodeData(id, { imageUrl, isGenerating: false, workflowStatus: 'completed' });
 
-            // Resize node to be larger (400px width)
-            const targetWidth = 400;
-            const [w, h] = (nodeData.aspectRatio || '1:1').split(':').map(Number);
-            const targetHeight = targetWidth / (w / h);
+            // Load generated image to confirm dimensions and resize
+            const img = new Image();
+            img.src = imageUrl;
+            img.onload = () => {
+                const aspect = img.naturalWidth / img.naturalHeight;
+                const targetWidth = 400;
+                const targetHeight = targetWidth / aspect;
 
-            setNodes((nds) => nds.map((node) => {
-                if (node.id === id) {
-                    return {
-                        ...node,
-                        style: { ...node.style, width: targetWidth, height: targetHeight },
-                        width: targetWidth,
-                        height: targetHeight,
-                    };
-                }
-                return node;
-            }));
+                setNodes((nds) => nds.map((node) => {
+                    if (node.id === id) {
+                        return {
+                            ...node,
+                            style: { ...node.style, width: targetWidth, height: targetHeight },
+                            width: targetWidth,
+                            height: targetHeight,
+                        };
+                    }
+                    return node;
+                }));
+            };
 
             toast.success('Image generated');
         } catch (err) {
@@ -199,9 +203,37 @@ function ImageNode({ id, data, selected, width, height }: NodeProps) {
             });
 
             if (res.ok) {
-                const { url } = await res.json();
-                updateNodeData(id, { imageUrl: url });
-                toast.success('Image uploaded');
+                const { file: uploadedFileRecord } = await res.json();
+
+                // Load image to get dimensions
+                const img = new Image();
+                img.src = uploadedFileRecord.url;
+                img.onload = () => {
+                    const aspect = img.naturalWidth / img.naturalHeight;
+                    const newWidth = 400;
+                    const newHeight = newWidth / aspect;
+
+                    // Update node dimensions
+                    setNodes((nds) => nds.map((node) => {
+                        if (node.id === id) {
+                            return {
+                                ...node,
+                                style: { ...node.style, width: newWidth, height: newHeight },
+                                width: newWidth,
+                                height: newHeight,
+                            };
+                        }
+                        return node;
+                    }));
+
+                    // Update node data
+                    updateNodeData(id, {
+                        imageUrl: uploadedFileRecord.url,
+                        aspectRatio: `${img.naturalWidth}:${img.naturalHeight}`
+                    });
+
+                    toast.success('Image uploaded');
+                };
             } else {
                 toast.error('Failed to upload image');
             }

@@ -21,6 +21,8 @@ export async function checkCredits(
         .from(schema.users)
         .where(eq(schema.users.id, userId));
 
+    console.log(`[Credits] Checking ${type} (cost: ${CREDIT_COSTS[type]}) for user ${userId}. Balance: ${user?.credits}`);
+
     if (!user) return false;
     return user.credits >= (CREDIT_COSTS[type] || 0);
 }

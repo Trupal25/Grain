@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
         const [fileRecord] = await db.insert(schema.files).values({
             userId,
             name: file.name,
-            url: uploadedFile.ufsUrl,
+            url: uploadedFile.url,
             size: file.size,
             type: file.type,
             folderId: folderId || null,

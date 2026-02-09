@@ -205,7 +205,15 @@ function GrainCanvas() {
         if (projectId) {
           // Load existing project
           const data = await loadProject(projectId);
-          setNodes(data.nodes);
+          // Sanitize nodes to reset stuck states
+          const sanitizedNodes = data.nodes.map((n: Node) => {
+            const d = n.data as any;
+            if (d.workflowStatus === 'running' || d.workflowStatus === 'queued' || d.isGenerating) {
+              return { ...n, data: { ...d, workflowStatus: 'idle', isGenerating: false } };
+            }
+            return n;
+          });
+          setNodes(sanitizedNodes);
           setEdges(data.edges);
           if (data.viewport) {
             setViewport(data.viewport);
@@ -429,8 +437,8 @@ function GrainCanvas() {
     const id = getNodeId(type);
     const pos = screenToFlowPosition({ x: menu.x, y: menu.y });
 
-    const width = type === 'image' ? 380 : type === 'video' ? 400 : type === 'text' ? 280 : type === 'chat' ? 450 : type === 'youtube' ? 400 : 200;
-    const height = type === 'image' ? 380 : type === 'video' ? 225 : type === 'text' ? 200 : type === 'chat' ? 650 : type === 'youtube' ? 225 : 100;
+    const width = type === 'image' ? 250 : type === 'video' ? 400 : type === 'text' ? 280 : type === 'chat' ? 450 : type === 'youtube' ? 400 : 200;
+    const height = type === 'image' ? 250 : type === 'video' ? 225 : type === 'text' ? 200 : type === 'chat' ? 650 : type === 'youtube' ? 225 : 100;
 
     setNodes(nds => [...nds, {
       id,
@@ -457,11 +465,11 @@ function GrainCanvas() {
       type,
       position: { x: pos.x - 200, y: pos.y - 200 },
       data: defaultData[type],
-      width: type === 'image' ? 380 : type === 'video' ? 400 : type === 'text' ? 280 : type === 'chat' ? 450 : type === 'youtube' ? 400 : 200,
-      height: type === 'image' ? 380 : type === 'video' ? 225 : type === 'text' ? 200 : type === 'chat' ? 650 : type === 'youtube' ? 225 : 100,
+      width: type === 'image' ? 250 : type === 'video' ? 400 : type === 'text' ? 280 : type === 'chat' ? 450 : type === 'youtube' ? 400 : 200,
+      height: type === 'image' ? 250 : type === 'video' ? 225 : type === 'text' ? 200 : type === 'chat' ? 650 : type === 'youtube' ? 225 : 100,
       style: {
-        width: type === 'image' ? 380 : type === 'video' ? 400 : type === 'text' ? 280 : type === 'chat' ? 450 : type === 'youtube' ? 400 : undefined,
-        height: type === 'image' ? 380 : type === 'video' ? 225 : type === 'text' ? 200 : type === 'chat' ? 650 : type === 'youtube' ? 225 : undefined,
+        width: type === 'image' ? 250 : type === 'video' ? 400 : type === 'text' ? 280 : type === 'chat' ? 450 : type === 'youtube' ? 400 : undefined,
+        height: type === 'image' ? 250 : type === 'video' ? 225 : type === 'text' ? 200 : type === 'chat' ? 650 : type === 'youtube' ? 225 : undefined,
       }
     }]);
   }, [setNodes, screenToFlowPosition]);
@@ -489,6 +497,8 @@ function GrainCanvas() {
           id: getNodeId('note'),
           type: 'note',
           position,
+          width: 280,
+          style: { width: 280 },
           data: {
             noteId: noteData.noteId,
             title: noteData.title,
