@@ -1,7 +1,7 @@
 'use client';
 
 import '@xyflow/react/dist/style.css';
-import { useCallback, useEffect, useState, Suspense, useRef } from 'react';
+import React, { useCallback, useEffect, useState, Suspense, useRef, useMemo, Fragment } from 'react';
 import { createPortal } from 'react-dom';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
@@ -31,10 +31,19 @@ import YoutubeNode from './components/nodes/YoutubeNode';
 import ToolsSidebar from './components/Sidebar';
 import { Sidebar as AppSidebar } from '@/components/Sidebar';
 import { WorkspaceSidebar } from '@/components/WorkspaceSidebar';
-import { ImageIcon, Video, AlignLeft, Loader2, Cloud, CloudOff, Check, PanelLeft, MessageCircle, Youtube } from 'lucide-react';
+import { ImageIcon, Video, AlignLeft, Loader2, Cloud, CloudOff, Check, PanelLeft, MessageCircle, Youtube, ChevronRight, Folder, ChevronDown, MoreHorizontal } from 'lucide-react';
+import {
+  Breadcrumb,
+  BreadcrumbEllipsis,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb"
 import { toast } from 'sonner';
 import type { ImageNodeData, VideoNodeData, TextNodeData, YoutubeNodeData } from './types';
-import { useAutoSave, loadProject, createProject } from '@/lib/project';
+import { useAutoSave, loadProject, createProject, updateProject } from '@/lib/project';
 import { Folder as FolderType, Document as DocumentType, Project as ProjectType } from '@/lib/db/schema';
 import { isValidConnection as checkValidConnection } from '@/lib/canvas-utils';
 
@@ -72,6 +81,8 @@ function GrainCanvas() {
   const [isLoading, setIsLoading] = useState(true);
   const connectingRef = useRef(false);
   const [projectName, setProjectName] = useState('Untitled Project');
+  const [projectFolderId, setProjectFolderId] = useState<string | null>(null);
+  const [isRenaming, setIsRenaming] = useState(false);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const [activeTool, setActiveTool] = useState<'pointer' | 'hand'>('pointer');
 
@@ -144,6 +155,42 @@ function GrainCanvas() {
     onSaveError: () => setSaveStatus('error'),
   });
 
+  const breadcrumbs = useMemo(() => {
+    if (!allFolders.length) return [];
+
+    const path = [];
+    let currentId = projectFolderId;
+
+    while (currentId) {
+      const folder = allFolders.find(f => f.id === currentId);
+      if (folder) {
+        path.unshift(folder);
+        currentId = folder.parentFolderId;
+      } else {
+        break;
+      }
+    }
+    return path;
+  }, [projectFolderId, allFolders]);
+
+  const handleRename = async (newName: string) => {
+    if (!projectId || !newName.trim() || newName === projectName) {
+      setIsRenaming(false);
+      return;
+    }
+
+    try {
+      await updateProject(projectId, { name: newName });
+      setProjectName(newName);
+      toast.success('Project renamed');
+    } catch (err) {
+      console.error('Rename failed:', err);
+      toast.error('Failed to rename project');
+    } finally {
+      setIsRenaming(false);
+    }
+  };
+
   useEffect(() => setMounted(true), []);
 
   // Load or create project on mount
@@ -162,6 +209,7 @@ function GrainCanvas() {
             setViewport(data.viewport);
           }
           setProjectName(data.project.name);
+          setProjectFolderId(data.project.folderId);
           // Update nodeId counter to avoid conflicts
           const maxId = Math.max(0, ...data.nodes.map((n: Node) => {
             const match = n.id.match(/-(\d+)$/);
@@ -504,35 +552,91 @@ function GrainCanvas() {
                 <PanelLeft className="w-4 h-4" />
               </button>
             )}
-            <div className="pointer-events-none">
-              <h1 className="text-sm font-bold tracking-tight text-white flex items-center gap-2">
-                <div className="w-5 h-5 rounded-md bg-white text-black flex items-center justify-center text-[11px] font-black shadow-lg">G</div>
-                <span className="opacity-90">Grain</span>
-              </h1>
-              <div className="flex items-center gap-2 mt-0.5 ml-0 leading-none">
-                <p className="text-[10px] text-zinc-600 font-mono tracking-tight">{projectName}</p>
-                {/* Save Status Indicator */}
-                <div className="flex items-center gap-1.5 text-[10px]">
-                  {saveStatus === 'saving' && (
-                    <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-full bg-yellow-500/10 border border-yellow-500/20 mr-1">
-                      <Cloud className="w-2.5 h-2.5 text-yellow-500 animate-pulse" />
-                      <span className="text-yellow-500/80 font-medium tracking-wide uppercase text-[9px]">Saving</span>
+            <div className="flex flex-col gap-0.5 pointer-events-auto">
+              <Breadcrumb>
+                <BreadcrumbList className="text-[13px] font-medium text-zinc-500 gap-2 sm:gap-2.5 flex-nowrap whitespace-nowrap">
+                  <BreadcrumbItem>
+                    <BreadcrumbLink
+                      onClick={() => router.push('/dashboard')}
+                      className="hover:text-white transition-colors cursor-pointer"
+                    >
+                      Workspace
+                    </BreadcrumbLink>
+                  </BreadcrumbItem>
+                  <BreadcrumbSeparator />
+
+                  {breadcrumbs.length > 2 ? (
+                    <>
+                      <BreadcrumbItem>
+                        <BreadcrumbEllipsis className="size-4" />
+                      </BreadcrumbItem>
+                      <BreadcrumbSeparator />
+                      <BreadcrumbItem>
+                        <BreadcrumbLink className="hover:text-white transition-colors flex items-center gap-1.5 cursor-default grayscale opacity-70">
+                          <Folder className="w-3.5 h-3.5" />
+                          {breadcrumbs[breadcrumbs.length - 1].name}
+                        </BreadcrumbLink>
+                      </BreadcrumbItem>
+                      <BreadcrumbSeparator />
+                    </>
+                  ) : (
+                    breadcrumbs.map((folder) => (
+                      <Fragment key={folder.id}>
+                        <BreadcrumbItem>
+                          <BreadcrumbLink className="hover:text-white transition-colors flex items-center gap-1.5 cursor-default grayscale opacity-70">
+                            <Folder className="w-3.5 h-3.5" />
+                            {folder.name}
+                          </BreadcrumbLink>
+                        </BreadcrumbItem>
+                        <BreadcrumbSeparator />
+                      </Fragment>
+                    ))
+                  )}
+
+                  <BreadcrumbItem>
+                    <BreadcrumbPage className="text-white">
+                      {isRenaming ? (
+                        <input
+                          autoFocus
+                          defaultValue={projectName}
+                          onBlur={(e) => handleRename(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleRename(e.currentTarget.value);
+                            if (e.key === 'Escape') setIsRenaming(false);
+                          }}
+                          className="bg-zinc-900 border border-zinc-700 text-[13px] font-bold text-white px-2 py-0.5 rounded focus:outline-none focus:ring-1 focus:ring-white/20 min-w-[150px]"
+                        />
+                      ) : (
+                        <div
+                          onClick={() => setIsRenaming(true)}
+                          className="text-[13px] font-bold tracking-tight text-white hover:bg-white/5 px-2 py-0.5 -ml-2 rounded cursor-pointer transition-all flex items-center gap-1.5 group"
+                        >
+                          <AlignLeft className="w-3.5 h-3.5 text-zinc-400 opacity-40 group-hover:opacity-100 transition-opacity" />
+                          {projectName}
+                          <ChevronDown className="w-3.5 h-3.5 text-zinc-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                      )}
+                    </BreadcrumbPage>
+                  </BreadcrumbItem>
+
+                  {/* Status Indicator integrated into breadcrumb row */}
+                  {saveStatus !== 'idle' && (
+                    <div className="flex items-center gap-2 ml-2">
+                      {saveStatus === 'saving' ? (
+                        <>
+                          <div className="w-1.5 h-1.5 rounded-full bg-yellow-500 animate-pulse" />
+                          <span className="text-yellow-500/60 text-[10px] uppercase tracking-widest font-bold">Saving</span>
+                        </>
+                      ) : saveStatus === 'saved' ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-emerald-500/60" />
+                          <span className="text-emerald-500/60 text-[10px] uppercase tracking-widest font-bold">Synced</span>
+                        </>
+                      ) : null}
                     </div>
                   )}
-                  {saveStatus === 'saved' && (
-                    <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 mr-1">
-                      <Check className="w-2.5 h-2.5 text-emerald-500" />
-                      <span className="text-emerald-500/80 font-medium tracking-wide uppercase text-[9px]">Saved</span>
-                    </div>
-                  )}
-                  {saveStatus === 'error' && (
-                    <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-full bg-rose-500/10 border border-rose-500/20 mr-1">
-                      <CloudOff className="w-2.5 h-2.5 text-rose-500" />
-                      <span className="text-rose-500/80 font-medium tracking-wide uppercase text-[9px]">Error</span>
-                    </div>
-                  )}
-                </div>
-              </div>
+                </BreadcrumbList>
+              </Breadcrumb>
             </div>
           </div>
 
