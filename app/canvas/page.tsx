@@ -117,7 +117,7 @@ function GrainCanvas() {
       const [foldersRes, docsRes, projectsRes] = await Promise.all([
         fetch('/api/folders?all=true'),
         fetch('/api/documents?all=true'),
-        fetch('/api/projects')
+        fetch('/api/projects?all=true')
       ]);
 
       if (foldersRes.ok) {

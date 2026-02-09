@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { db, schema } from '@/lib/db';
-import { eq } from 'drizzle-orm';
+import { eq, and, isNull, isNotNull } from 'drizzle-orm';
 import { ensureUserExists } from '@/lib/user';
 
 // GET all projects for the authenticated user
-export async function GET() {
+export async function GET(request: NextRequest) {
     try {
         const { userId } = await auth();
 
@@ -13,8 +13,24 @@ export async function GET() {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
+        const { searchParams } = new URL(request.url);
+        const folderId = searchParams.get('folderId');
+        const trash = searchParams.get('trash');
+        const starred = searchParams.get('starred');
+        const all = searchParams.get('all');
+
         const projects = await db.query.projects.findMany({
-            where: eq(schema.projects.userId, userId),
+            where: and(
+                eq(schema.projects.userId, userId),
+                trash === 'true'
+                    ? isNotNull(schema.projects.trashedAt)
+                    : starred === 'true'
+                        ? and(eq(schema.projects.isStarred, true), isNull(schema.projects.trashedAt))
+                        : and(
+                            isNull(schema.projects.trashedAt),
+                            all === 'true' ? undefined : (folderId ? eq(schema.projects.folderId, folderId) : isNull(schema.projects.folderId))
+                        ),
+            ),
             orderBy: (p, { desc }) => [desc(p.updatedAt)],
             with: {
                 folder: true,

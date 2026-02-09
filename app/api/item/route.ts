@@ -45,6 +45,12 @@ export async function PATCH(request: NextRequest) {
         delete cleanUpdates.userId;
         delete cleanUpdates.createdAt;
 
+        if (updates.trashedAt) {
+            cleanUpdates.trashedAt = new Date(updates.trashedAt);
+        } else if (updates.trashedAt === null) {
+            cleanUpdates.trashedAt = null;
+        }
+
         cleanUpdates.updatedAt = new Date();
 
         await db.update(table as any)

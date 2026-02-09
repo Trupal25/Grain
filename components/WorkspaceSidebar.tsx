@@ -254,6 +254,15 @@ function FolderTreeItem({
                                             ? "bg-zinc-800 text-white"
                                             : "text-zinc-400 hover:text-white hover:bg-zinc-800"
                                     )}
+                                    draggable
+                                    onDragStart={(e) => {
+                                        e.stopPropagation();
+                                        e.dataTransfer.setData('application/grain/move-item', JSON.stringify({
+                                            id: proj.id,
+                                            type: 'project'
+                                        }));
+                                        e.dataTransfer.effectAllowed = 'move';
+                                    }}
                                 >
                                     <div className="w-5 h-5 flex items-center justify-center shrink-0">
                                         <StickyNote className="w-3.5 h-3.5 text-zinc-500 group-hover:text-zinc-300 transition-colors" />
@@ -499,6 +508,12 @@ export function WorkspaceSidebar({
         }
     };
 
+    const folderIds = new Set(allFolders.map(f => f.id));
+    const openFiles = [
+        ...allProjects.filter(p => !p.folderId || !folderIds.has(p.folderId)),
+        ...allDocuments.filter(d => !d.folderId || !folderIds.has(d.folderId))
+    ].sort(sortByName);
+
     return (
         <div
             className={cn(
@@ -623,10 +638,7 @@ export function WorkspaceSidebar({
                                     activeItemType={activeItemType}
                                 />
                             ))}
-                        {[
-                            ...allProjects.filter(p => !p.folderId),
-                            ...allDocuments.filter(d => !d.folderId)
-                        ].sort(sortByName).map((file) => {
+                        {openFiles.map((file) => {
                             const isDoc = 'type' in file && (file.type === 'canvas' || file.type === 'note');
                             if (isDoc) {
                                 const doc = file as DocumentType;
@@ -736,7 +748,8 @@ export function WorkspaceSidebar({
                                     </div>
                                 );
                             }
-                        })}
+                        })
+                        }
                     </div>
                 </div>
 

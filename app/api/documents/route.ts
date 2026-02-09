@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { db, schema } from '@/lib/db';
-import { eq, and, isNull } from 'drizzle-orm';
+import { eq, and, isNull, isNotNull } from 'drizzle-orm';
 import { ensureUserExists } from '@/lib/user';
 
 // GET all documents for the authenticated user
@@ -15,12 +15,21 @@ export async function GET(request: NextRequest) {
         const { searchParams } = new URL(request.url);
         const all = searchParams.get('all');
         const folderId = searchParams.get('folderId');
+        const trash = searchParams.get('trash');
+        const starred = searchParams.get('starred');
         const type = searchParams.get('type') as 'canvas' | 'note' | null;
 
         const documents = await db.query.documents.findMany({
             where: and(
                 eq(schema.documents.userId, userId),
-                all === 'true' ? undefined : (folderId ? eq(schema.documents.folderId, folderId) : isNull(schema.documents.folderId)),
+                trash === 'true'
+                    ? isNotNull(schema.documents.trashedAt)
+                    : starred === 'true'
+                        ? and(eq(schema.documents.isStarred, true), isNull(schema.documents.trashedAt))
+                        : and(
+                            isNull(schema.documents.trashedAt),
+                            all === 'true' ? undefined : (folderId ? eq(schema.documents.folderId, folderId) : isNull(schema.documents.folderId))
+                        ),
                 type ? eq(schema.documents.type, type) : undefined
             ),
             with: {
